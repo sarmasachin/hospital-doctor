@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta name="theme-color" content="#f8fafc">
+    <title>Contact / Support - LiveHospital</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="legal-pages.css">
+    <link rel="stylesheet" href="contact-page.css">
+    <meta name="description" content="LiveHospital संपर्क व सहायता।">
+    <meta name="robots" content="index, follow">
+    <script src="/contact-config.js"></script>
+    <script src="/seo-bootstrap.js" defer></script>
+</head>
+<body>
+    <!-- Top Menu -->
+    <nav class="top-menu">
+        <div class="container">
+            <a href="index.html" class="menu-btn">🏠 Home</a>
+            <a href="privacy.html" class="menu-btn">🔒 गोपनीयता नीति</a>
+            <a href="terms.html" class="menu-btn">📄 नियम और शर्तें</a>
+            <a href="cookies.html" class="menu-btn">🍪 कुकी नीति</a>
+            <a href="contact.html" class="menu-btn active">📞 संपर्क करें</a>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1>📞 Contact / Support</h1>
+        <p>संपर्क करें / सहायता</p>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+        <!-- Contact Cards -->
+        <div class="contact-grid">
+            <div class="contact-card" data-contact-phone-card>
+                <div class="icon">📞</div>
+                <h3>फोन नंबर</h3>
+                <p data-contact-hours>सोमवार - शनिवार (9AM - 6PM)</p>
+                <div class="info"><a href="#" data-contact-phone></a></div>
+                <p class="contact-fallback" data-contact-phone-fallback style="display:none;font-size:0.9rem;color:#9ca3af;">
+                    फोन जल्द उपलब्ध — ईमेल: <a href="mailto:support@livehospital.org" data-contact-support-email>support@livehospital.org</a>
+                </p>
+            </div>
+            <div class="contact-card">
+                <div class="icon">📧</div>
+                <h3>ईमेल</h3>
+                <p>24 घंटे के अंदर जवाब</p>
+                <div class="info"><a href="mailto:support@livehospital.org" data-contact-support-email>support@livehospital.org</a></div>
+            </div>
+            <div class="contact-card" data-contact-whatsapp-card>
+                <div class="icon">💬</div>
+                <h3>WhatsApp</h3>
+                <p>तुरंत सहायता के लिए</p>
+                <div class="info"><a href="#" data-contact-whatsapp></a></div>
+                <p class="contact-fallback" data-contact-whatsapp-fallback style="display:none;font-size:0.9rem;color:#9ca3af;">
+                    WhatsApp जल्द उपलब्ध — ईमेल: <a href="mailto:support@livehospital.org" data-contact-support-email>support@livehospital.org</a>
+                </p>
+            </div>
+        </div>
+
+        <!-- Contact Form -->
+        <div class="form-section">
+            <h2>📝 हमें संदेश भेजें</h2>
+            <p class="subtitle">कोई भी सवाल या सुझाव हो, नीचे फॉर्म भरें</p>
+            
+            <form id="contactForm" novalidate>
+                <div id="formAlert" class="form-alert"></div>
+                <div class="form-grid">
+                    <div class="form-group" id="nameGroup">
+                        <label>आपका नाम *</label>
+                        <div class="error-message">⚠️ कृपया अपना नाम लिखें (कम से कम 3 अक्षर)</div>
+                        <input type="text" id="nameInput" placeholder="पूरा नाम लिखें">
+                    </div>
+                    <div class="form-group" id="mobileGroup">
+                        <label>मोबाइल नंबर *</label>
+                        <div class="error-message">⚠️ कृपया सही 10 अंकों का मोबाइल नंबर लिखें</div>
+                        <input type="tel" id="mobileInput" placeholder="10 अंकों का मोबाइल नंबर">
+                    </div>
+                    <div class="form-group" id="emailGroup">
+                        <label>ईमेल *</label>
+                        <div class="error-message">⚠️ कृपया सही ईमेल पता लिखें</div>
+                        <input type="email" id="emailInput" placeholder="example@email.com">
+                    </div>
+                    <div class="form-group" id="subjectGroup">
+                        <label>विषय *</label>
+                        <div class="error-message">⚠️ कृपया एक विषय चुनें</div>
+                        <select id="subjectInput">
+                            <option value="">विषय चुनें</option>
+                            <option value="general">सामान्य पूछताछ</option>
+                            <option value="doctor">डॉक्टर जानकारी</option>
+                            <option value="hospital">हॉस्पिटल जानकारी</option>
+                            <option value="technical">तकनीकी समस्या</option>
+                            <option value="suggestion">सुझाव</option>
+                            <option value="complaint">शिकायत</option>
+                        </select>
+                    </div>
+                    <div class="form-group full-width" id="messageGroup">
+                        <label>आपका संदेश *</label>
+                        <div class="error-message">⚠️ कृपया अपना संदेश लिखें (कम से कम 10 अक्षर)</div>
+                        <textarea id="messageInput" placeholder="अपना संदेश यहां लिखें..."></textarea>
+                    </div>
+                </div>
+                <button type="submit" class="btn-submit">📤 संदेश भेजें</button>
+            </form>
+        </div>
+
+        <!-- FAQ Section -->
+        <div class="faq-section">
+            <h2>❓ अक्सर पूछे जाने वाले सवाल</h2>
+            
+            <div class="faq-item">
+                <h4>❔ डॉक्टर की उपलब्धता कैसे चेक करें?</h4>
+                <p>होम पेज पर हॉस्पिटल कार्ड में "View Doctors" बटन पर क्लिक करें। वहां आपको सभी डॉक्टरों की उपलब्धता दिखेगी।</p>
+            </div>
+            
+            <div class="faq-item">
+                <h4>❔ जानकारी कितनी बार अपडेट होती है?</h4>
+                <p>हम रोजाना सुबह 8 बजे डॉक्टरों की उपलब्धता अपडेट करते हैं। आपातकालीन बदलाव तुरंत अपडेट किए जाते हैं।</p>
+            </div>
+            
+            <div class="faq-item">
+                <h4>❔ क्या यह सेवा मुफ्त है?</h4>
+                <p>हां, LiveHospital की सभी सेवाएं पूरी तरह से मुफ्त हैं। आप बिना किसी शुल्क के डॉक्टरों की उपलब्धता देख सकते हैं।</p>
+            </div>
+            
+            <div class="faq-item">
+                <h4>❔ गलत जानकारी की रिपोर्ट कैसे करें?</h4>
+                <p>ऊपर दिए गए फॉर्म में "शिकायत" विषय चुनकर हमें बताएं। हम 24 घंटे में जांच करके सुधार करेंगे।</p>
+            </div>
+        </div>
+
+        <!-- Social Section -->
+        <div class="social-section">
+            <h3>सोशल मीडिया पर जुड़ें</h3>
+            <div class="social-links">
+                <a href="#" class="social-link">f</a>
+                <a href="#" class="social-link">i</a>
+                <a href="#" class="social-link">w</a>
+                <a href="#" class="social-link">y</a>
+                <a href="#" class="social-link">t</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; 2026 LiveHospital. सभी अधिकार सुरक्षित।</p>
+    </footer>
+
+    <script>
+        // Form elements
+        const form = document.getElementById('contactForm');
+        const formAlert = document.getElementById('formAlert');
+        
+        const nameInput = document.getElementById('nameInput');
+        const mobileInput = document.getElementById('mobileInput');
+        const emailInput = document.getElementById('emailInput');
+        const subjectInput = document.getElementById('subjectInput');
+        const messageInput = document.getElementById('messageInput');
+        
+        const nameGroup = document.getElementById('nameGroup');
+        const mobileGroup = document.getElementById('mobileGroup');
+        const emailGroup = document.getElementById('emailGroup');
+        const subjectGroup = document.getElementById('subjectGroup');
+        const messageGroup = document.getElementById('messageGroup');
+
+        // Validation functions
+        function validateName() {
+            const value = nameInput.value.trim();
+            if (value.length < 3) {
+                nameGroup.classList.add('error');
+                nameGroup.classList.remove('success');
+                return false;
+            }
+            nameGroup.classList.remove('error');
+            nameGroup.classList.add('success');
+            return true;
+        }
+
+        function validateMobile() {
+            const value = mobileInput.value.trim().replace(/\D/g, '');
+            if (value.length !== 10) {
+                mobileGroup.classList.add('error');
+                mobileGroup.classList.remove('success');
+                return false;
+            }
+            mobileGroup.classList.remove('error');
+            mobileGroup.classList.add('success');
+            return true;
+        }
+
+        function validateEmail() {
+            const value = emailInput.value.trim();
+            if (value === '') {
+                emailGroup.classList.add('error');
+                emailGroup.classList.remove('success');
+                return false; // Email is required
+            }
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(value)) {
+                emailGroup.classList.add('error');
+                emailGroup.classList.remove('success');
+                return false;
+            }
+            emailGroup.classList.remove('error');
+            emailGroup.classList.add('success');
+            return true;
+        }
+
+        function validateSubject() {
+            const value = subjectInput.value;
+            if (value === '') {
+                subjectGroup.classList.add('error');
+                subjectGroup.classList.remove('success');
+                return false;
+            }
+            subjectGroup.classList.remove('error');
+            subjectGroup.classList.add('success');
+            return true;
+        }
+
+        function validateMessage() {
+            const value = messageInput.value.trim();
+            if (value.length < 10) {
+                messageGroup.classList.add('error');
+                messageGroup.classList.remove('success');
+                return false;
+            }
+            messageGroup.classList.remove('error');
+            messageGroup.classList.add('success');
+            return true;
+        }
+
+        // Show alert
+        function showFormAlert(type, message) {
+            formAlert.textContent = message;
+            formAlert.className = 'form-alert ' + type;
+        }
+
+        // Hide alert
+        function hideFormAlert() {
+            formAlert.className = 'form-alert';
+        }
+
+        // Real-time validation on input
+        nameInput.addEventListener('input', validateName);
+        mobileInput.addEventListener('input', validateMobile);
+        emailInput.addEventListener('input', validateEmail);
+        subjectInput.addEventListener('change', validateSubject);
+        messageInput.addEventListener('input', validateMessage);
+
+        // Form submit
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Validate all fields
+            const isNameValid = validateName();
+            const isMobileValid = validateMobile();
+            const isEmailValid = validateEmail();
+            const isSubjectValid = validateSubject();
+            const isMessageValid = validateMessage();
+
+            // Check if all valid
+            if (isNameValid && isMobileValid && isEmailValid && isSubjectValid && isMessageValid) {
+                // Save to localStorage for admin dashboard
+                const contactMessages = JSON.parse(localStorage.getItem('contactMessages') || '[]');
+                const newMessage = {
+                    id: contactMessages.length > 0 ? Math.max(...contactMessages.map(m => m.id)) + 1 : 1,
+                    name: nameInput.value.trim(),
+                    mobile: mobileInput.value.trim(),
+                    email: emailInput.value.trim(),
+                    subject: subjectInput.value,
+                    subjectText: subjectInput.options[subjectInput.selectedIndex].text,
+                    message: messageInput.value.trim(),
+                    status: 'pending',
+                    reply: '',
+                    createdAt: new Date().toISOString(),
+                    repliedAt: null
+                };
+                contactMessages.push(newMessage);
+                localStorage.setItem('contactMessages', JSON.stringify(contactMessages));
+                
+                showFormAlert('success', '✅ धन्यवाद! आपका संदेश भेज दिया गया है। हम जल्द ही संपर्क करेंगे।');
+                form.reset();
+                
+                // Remove success classes
+                nameGroup.classList.remove('success');
+                mobileGroup.classList.remove('success');
+                emailGroup.classList.remove('success');
+                subjectGroup.classList.remove('success');
+                messageGroup.classList.remove('success');
+                
+                // Hide alert after 5 seconds
+                setTimeout(hideFormAlert, 5000);
+            } else {
+                showFormAlert('error', '⚠️ कृपया सभी आवश्यक फ़ील्ड सही से भरें');
+            }
+        });
+    </script>
+</body>
+</html>

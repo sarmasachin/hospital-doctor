@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="hi" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    
+    <!-- Security Meta Tags -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <!-- X-Frame-Options should be set via HTTP header, not meta tag -->
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://www.googletagmanager.com https://www.google-analytics.com; font-src 'self'; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://analytics.google.com https://www.googletagmanager.com;">
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="LiveHospital - Check doctor availability in hospitals. जानें कि आज आपके डॉक्टर हॉस्पिटल में उपलब्ध हैं या नहीं।">
+    <meta name="keywords" content="doctor availability, hospital, medical, health, डॉक्टर, हॉस्पिटल, स्वास्थ्य">
+    <meta name="author" content="LiveHospital">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph / Social Media -->
+    <meta property="og:title" content="LiveHospital - Doctor Availability System">
+    <meta property="og:description" content="Check doctor availability in hospitals near you">
+    <meta property="og:type" content="website">
+    
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#f8fafc">
+    <meta name="msapplication-navbutton-color" content="#f8fafc">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <title>LiveHospital - Doctor Availability | आज डॉक्टर उपलब्ध हैं?</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="style.css">
+    <script src="/contact-config.js"></script>
+    <script src="/seo-bootstrap.js" defer></script>
+</head>
+<body>
+    <!-- Top Header with Logo -->
+    <header class="top-header">
+        <div class="container">
+            <div class="logo-section">
+                <div class="logo">
+                    <img src="/favicon.svg" alt="LiveHospital" width="36" height="36" class="site-logo-img">
+                </div>
+                <div class="site-title">
+                    <h1 data-site-brand-title>LiveHospital</h1>
+                    <p data-site-brand-tagline>Doctor Availability System</p>
+                </div>
+            </div>
+            <button type="button" class="theme-toggle" id="themeToggle" title="गहरी थीम पर जाएँ" aria-label="गहरी थीम चालू करें">🌙</button>
+        </div>
+    </header>
+
+    <!-- Hero Section with Search -->
+    <section class="hero">
+        <div class="container">
+            <h1>डॉक्टर की उपलब्धता चेक करें</h1>
+            <p>जानें कि आज आपके पसंदीदा डॉक्टर हॉस्पिटल में उपलब्ध हैं या नहीं</p>
+            
+            <div id="searchError" class="search-error"></div>
+            <div class="search-container">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="हॉस्पिटल का नाम खोजें..." autocomplete="off">
+                    <button type="button" class="btn-search-location" id="searchLocationBtn" onclick="requestLocation()" title="नज़दीकी हॉस्पिटल — Location चालू करें" aria-label="नज़दीकी हॉस्पिटल — Location चालू करें">📍</button>
+                    <button type="button" class="btn btn-search" onclick="searchHospitals()">खोजें</button>
+                </div>
+                <div id="searchSuggestions" class="search-suggestions"></div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Hospital Cards Section -->
+    <section class="hospitals-section" id="hospitals">
+        <div class="container">
+            <div class="hospitals-grid" id="hospitalsGrid">
+                <!-- Hospital cards will be inserted here by JavaScript -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer" id="site-footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <h4>Contact Us</h4>
+                    <p>आप किसी भी जानकारी / अपडेट के लिए हमसे संपर्क कर सकते हैं।</p>
+                    <div class="contact-info">
+                        <p id="footerPhone" data-contact-footer-phone style="display:none"></p>
+                        <p id="footerEmail" data-contact-footer-email>📧 support@livehospital.org</p>
+                    </div>
+                    <div class="social-icons">
+                        <a href="#" data-social-facebook class="social-icon" aria-label="Facebook" style="display:none">f</a>
+                        <a href="#" data-social-instagram class="social-icon" aria-label="Instagram" style="display:none">i</a>
+                        <a href="#" data-social-whatsapp class="social-icon" aria-label="WhatsApp" style="display:none">w</a>
+                        <a href="#" data-social-youtube class="social-icon" aria-label="YouTube" style="display:none">y</a>
+                        <a href="#" data-social-twitter class="social-icon" aria-label="Twitter" style="display:none">t</a>
+                    </div>
+                </div>
+                <div class="footer-col">
+                    <h4>Important</h4>
+                    <p>सुरक्षा और पारदर्शिता के लिए नीचे दिए पेज देखें।</p>
+                    <ul>
+                        <li><a href="privacy.html">🔒 गोपनीयता नीति</a></li>
+                        <li><a href="terms.html">📄 नियम और शर्तें</a></li>
+                        <li><a href="cookies.html">🍪 कुकी नीति</a></li>
+                        <li><a href="contact.html">📞 संपर्क करें</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="#" id="footerGoTop">🔝 Go Top</a></li>
+                        <li><a href="#" id="footerHome">🏠 Home</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Follow</h4>
+                    <p>हमसे जुड़ें और अपडेट्स पाएं।</p>
+                    <ul>
+                        <li data-social-hide-empty style="display:none"><a href="#" data-social-whatsapp>WhatsApp</a></li>
+                        <li data-social-hide-empty style="display:none"><a href="#" data-social-instagram>Instagram</a></li>
+                        <li data-social-hide-empty style="display:none"><a href="#" data-social-facebook>Facebook</a></li>
+                        <li data-social-hide-empty style="display:none"><a href="#" data-social-youtube>YouTube</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Sub Footer -->
+    <div class="sub-footer">
+        <div class="container">
+            <div class="sub-footer-content">
+                <p>&copy; 2026 LiveHospital. सभी अधिकार सुरक्षित।</p>
+                <div class="sub-footer-links">
+                    <a href="privacy.html">गोपनीयता नीति</a>
+                    <a href="terms.html">नियम और शर्तें</a>
+                    <a href="cookies.html">कुकी नीति</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

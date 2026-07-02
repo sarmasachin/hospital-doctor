@@ -1,0 +1,2296 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <title>Admin Dashboard - LiveHospital</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="forgot-password.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #0a0e13;
+            color: #ffffff;
+            min-height: 100vh;
+        }
+
+        /* Login Page */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .login-box {
+            background: #151a21;
+            border: 1px solid #252d38;
+            border-radius: 16px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-logo .icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        .login-logo h1 {
+            font-size: 1.8rem;
+            color: #1e88e5;
+        }
+
+        .login-logo p {
+            color: #9ca3af;
+            font-size: 0.9rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #d1d5db;
+            font-weight: 500;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            background: #0d1117;
+            border: 1px solid #252d38;
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 1rem;
+        }
+
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #1e88e5;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #1e88e5, #1565c0);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-login:hover {
+            background: linear-gradient(135deg, #1565c0, #0d47a1);
+        }
+
+        .login-error {
+            background: #ef444420;
+            border: 1px solid #ef4444;
+            color: #ef4444;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .forgot-password-link--blue { color: #1e88e5 !important; }
+
+        /* Dashboard Layout */
+        .dashboard {
+            display: none;
+        }
+
+        .dashboard.active {
+            display: block;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 260px;
+            height: 100vh;
+            background: #0d1117;
+            border-right: 1px solid #252d38;
+            padding: 20px 0;
+            overflow-y: auto;
+        }
+
+        .sidebar-logo {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid #252d38;
+            margin-bottom: 20px;
+        }
+
+        .sidebar-logo h2 {
+            color: #1e88e5;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+        }
+
+        .sidebar-menu li {
+            margin-bottom: 5px;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 20px;
+            color: #9ca3af;
+            text-decoration: none;
+            font-size: 0.95rem;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar-menu a:hover, .sidebar-menu a.active {
+            background: #151a21;
+            color: #ffffff;
+            border-left-color: #1e88e5;
+        }
+
+        .sidebar-menu .icon {
+            font-size: 1.1rem;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 260px;
+            padding: 20px 30px;
+            min-height: 100vh;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 25px;
+            background: #151a21;
+            border-radius: 12px;
+            margin-bottom: 25px;
+        }
+
+        .top-bar h1 {
+            font-size: 1.4rem;
+            color: #ffffff;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-info span {
+            color: #9ca3af;
+        }
+
+        .btn-logout {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: #151a21;
+            border: 1px solid #252d38;
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .stat-card .icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .stat-card h3 {
+            font-size: 2rem;
+            color: #ffffff;
+            margin-bottom: 5px;
+        }
+
+        .stat-card p {
+            color: #9ca3af;
+            font-size: 0.9rem;
+        }
+
+        .stat-card.hospitals { border-left: 4px solid #1e88e5; }
+        .stat-card.doctors { border-left: 4px solid #22c55e; }
+        .stat-card.blood { border-left: 4px solid #ef4444; }
+        .stat-card.admins { border-left: 4px solid #f97316; }
+
+        /* Content Sections */
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        /* Card */
+        .card {
+            background: #151a21;
+            border: 1px solid #252d38;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #252d38;
+        }
+
+        .card-header h2 {
+            font-size: 1.2rem;
+            color: #ffffff;
+        }
+
+        .btn-add {
+            background: #22c55e;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-add:hover {
+            background: #16a34a;
+        }
+
+        /* Search and Filter Bar */
+        .table-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .search-box-admin {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            max-width: 400px;
+        }
+
+        .search-box-admin input {
+            flex: 1;
+            padding: 10px 15px;
+            background: #0d1117;
+            border: 1px solid #252d38;
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 0.9rem;
+        }
+
+        .search-box-admin input:focus {
+            outline: none;
+            border-color: #1e88e5;
+        }
+
+        .search-box-admin input::placeholder {
+            color: #6b7280;
+        }
+
+        .table-info {
+            color: #9ca3af;
+            font-size: 0.85rem;
+        }
+
+        /* Pagination */
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #252d38;
+        }
+
+        .page-btn {
+            background: #151a21;
+            color: #9ca3af;
+            border: 1px solid #252d38;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .page-btn:hover {
+            background: #1e293b;
+            border-color: #1e88e5;
+            color: #ffffff;
+        }
+
+        .page-btn.active {
+            background: #1e88e5;
+            color: white;
+            border-color: #1e88e5;
+        }
+
+        .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .page-dots {
+            color: #6b7280;
+            padding: 0 5px;
+        }
+
+        .pagination-info {
+            color: #9ca3af;
+            font-size: 0.85rem;
+            margin-left: 15px;
+        }
+
+        /* Footer Tabs */
+        .footer-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #252d38;
+            padding-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .footer-tab-btn {
+            background: #151a21;
+            color: #9ca3af;
+            border: 1px solid #252d38;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .footer-tab-btn:hover, .footer-tab-btn.active {
+            background: #1e88e5;
+            color: white;
+            border-color: #1e88e5;
+        }
+
+        .footer-tab-content {
+            display: none;
+        }
+
+        .footer-tab-content.active {
+            display: block;
+        }
+
+        /* Contact Message Badge */
+        .badge-pending {
+            background: #f59e0b;
+            color: #000;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .status-pending {
+            background: #f59e0b20;
+            color: #f59e0b;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+
+        .status-replied {
+            background: #22c55e20;
+            color: #22c55e;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+
+        /* Message Detail Modal */
+        .message-detail {
+            background: #0d1117;
+            border: 1px solid #252d38;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .message-detail h4 {
+            color: #1e88e5;
+            margin-bottom: 10px;
+        }
+
+        .message-detail p {
+            color: #d1d5db;
+            margin-bottom: 8px;
+        }
+
+        .message-detail .label {
+            color: #9ca3af;
+            font-size: 0.85rem;
+        }
+
+        .message-content {
+            background: #151a21;
+            border: 1px solid #252d38;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+            color: #ffffff;
+            white-space: pre-wrap;
+        }
+
+        .reply-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #252d38;
+        }
+
+        .reply-section h4 {
+            color: #22c55e;
+            margin-bottom: 15px;
+        }
+
+        .previous-reply {
+            background: #22c55e15;
+            border: 1px solid #22c55e;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .previous-reply .reply-date {
+            color: #9ca3af;
+            font-size: 0.8rem;
+            margin-top: 10px;
+        }
+
+        /* Rich Text Editor */
+        .editor-toolbar {
+            background: #0d1117;
+            border: 1px solid #252d38;
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+            padding: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .editor-toolbar button {
+            background: #151a21;
+            border: 1px solid #252d38;
+            color: #d1d5db;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .editor-toolbar button:hover {
+            background: #1e88e5;
+            color: #fff;
+            border-color: #1e88e5;
+        }
+
+        .editor-toolbar button.active {
+            background: #1e88e5;
+            color: #fff;
+        }
+
+        .editor-toolbar select {
+            background: #151a21;
+            border: 1px solid #252d38;
+            color: #d1d5db;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .editor-toolbar .separator {
+            width: 1px;
+            background: #252d38;
+            margin: 0 5px;
+        }
+
+        .rich-editor {
+            background: #0d1117;
+            border: 1px solid #252d38;
+            border-radius: 0 0 8px 8px;
+            min-height: 400px;
+            padding: 20px;
+            color: #ffffff;
+            overflow-y: auto;
+        }
+
+        .rich-editor:focus {
+            outline: none;
+            border-color: #1e88e5;
+        }
+
+        .rich-editor h1, .rich-editor h2, .rich-editor h3,
+        .rich-editor h4, .rich-editor h5, .rich-editor h6 {
+            color: #ffffff;
+            margin: 15px 0 10px 0;
+        }
+
+        .rich-editor p {
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+
+        .rich-editor a {
+            color: #1e88e5;
+            text-decoration: underline;
+        }
+
+        .rich-editor ul, .rich-editor ol {
+            margin: 10px 0;
+            padding-left: 25px;
+        }
+
+        .rich-editor li {
+            margin: 5px 0;
+        }
+
+        .rich-editor blockquote {
+            border-left: 4px solid #1e88e5;
+            padding-left: 15px;
+            margin: 15px 0;
+            color: #9ca3af;
+            font-style: italic;
+        }
+
+        .page-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .page-tab-btn {
+            background: #151a21;
+            border: 1px solid #252d38;
+            color: #d1d5db;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .page-tab-btn:hover {
+            background: #1e293b;
+        }
+
+        .page-tab-btn.active {
+            background: #1e88e5;
+            color: #fff;
+            border-color: #1e88e5;
+        }
+
+        .page-tab-content {
+            display: none;
+        }
+
+        .page-tab-content.active {
+            display: block;
+        }
+
+        .editor-preview {
+            background: #151a21;
+            border: 1px solid #252d38;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .editor-preview h4 {
+            color: #1e88e5;
+            margin-bottom: 15px;
+        }
+
+        /* Table */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #252d38;
+        }
+
+        th {
+            background: #0d1117;
+            color: #9ca3af;
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+
+        td {
+            color: #d1d5db;
+        }
+
+        tr:hover {
+            background: #1e293b;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-badge.available {
+            background: #22c55e20;
+            color: #22c55e;
+        }
+
+        .status-badge.busy {
+            background: #f9731620;
+            color: #f97316;
+        }
+
+        .status-badge.leave {
+            background: #ef444420;
+            color: #ef4444;
+        }
+
+        .type-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+
+        .type-badge.gov {
+            background: #1e88e520;
+            color: #1e88e5;
+        }
+
+        .type-badge.private {
+            background: #a855f720;
+            color: #a855f7;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-edit {
+            background: #1e88e5;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .btn-delete {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #151a21;
+            border: 1px solid #252d38;
+            border-radius: 16px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #252d38;
+        }
+
+        .modal-header h2 {
+            font-size: 1.2rem;
+        }
+
+        .btn-close {
+            background: none;
+            border: none;
+            color: #9ca3af;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background: #1e88e5;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .btn-submit:hover {
+            background: #1565c0;
+        }
+
+        /* Form Row */
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        /* Alert */
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert.success {
+            background: #22c55e20;
+            border: 1px solid #22c55e;
+            color: #22c55e;
+        }
+
+        .alert.error {
+            background: #ef444420;
+            border: 1px solid #ef4444;
+            color: #ef4444;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 200px;
+            }
+            .main-content {
+                margin-left: 200px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: -260px;
+                top: 0;
+                height: 100vh;
+                z-index: 1000;
+                transition: left 0.3s;
+            }
+
+            .sidebar.open {
+                left: 0;
+            }
+
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 999;
+            }
+
+            .sidebar-overlay.show {
+                display: block;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 15px;
+            }
+
+            .top-bar {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .mobile-menu-btn {
+                display: block;
+                background: #1e88e5;
+                color: white;
+                border: none;
+                padding: 10px 15px;
+                border-radius: 8px;
+                cursor: pointer;
+                margin-bottom: 15px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            th, td {
+                padding: 8px 10px;
+                font-size: 0.85rem;
+            }
+        }
+
+        .mobile-menu-btn {
+            display: none;
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .quick-action-btn {
+            background: #151a21;
+            border: 1px solid #252d38;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            color: #ffffff;
+        }
+
+        .quick-action-btn:hover {
+            border-color: #1e88e5;
+            background: #1e293b;
+        }
+
+        .quick-action-btn .icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .quick-action-btn p {
+            color: #9ca3af;
+            font-size: 0.9rem;
+        }
+
+        /* Autocomplete Styles */
+        .autocomplete-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #0d1117;
+            border: 1px solid #252d38;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .autocomplete-suggestions.show {
+            display: block;
+        }
+
+        .autocomplete-item {
+            padding: 12px 15px;
+            cursor: pointer;
+            color: #d1d5db;
+            border-bottom: 1px solid #252d38;
+        }
+
+        .autocomplete-item:hover {
+            background: #1e88e5;
+            color: #fff;
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        .autocomplete-item .hospital-location {
+            font-size: 0.8rem;
+            color: #9ca3af;
+        }
+
+        .autocomplete-item:hover .hospital-location {
+            color: #e0e0e0;
+        }
+
+        .no-results {
+            padding: 12px 15px;
+            color: #9ca3af;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Page -->
+    <div class="login-container" id="loginPage">
+        <div class="login-box">
+            <div class="login-logo">
+                <div class="icon">🏥</div>
+                <h1>LiveHospital Admin</h1>
+                <p>Dashboard Login</p>
+            </div>
+            
+            <div class="login-error" id="loginError">
+                Invalid username or password
+            </div>
+            
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="loginUsername" placeholder="Enter username" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="loginPassword" placeholder="Enter password" required>
+                </div>
+                <button type="submit" class="btn-login">🔐 Login</button>
+            </form>
+
+            <div id="forgotPasswordLinkWrap" style="text-align:center;margin-top:15px;">
+                <button type="button" id="openForgotPassword" class="forgot-password-link forgot-password-link--blue">🔑 पासवर्ड भूल गए?</button>
+            </div>
+
+            <div id="forgotPasswordPanel" class="forgot-form-panel">
+                <h3 class="h-accent-blue">🔑 पासवर्ड रीसेट</h3>
+                <p>अपना रजिस्टर्ड Gmail / Email डालें। OTP आपके email पर भेजा जाएगा।</p>
+                <div id="forgotStep1">
+                    <div class="form-group">
+                        <label>Email (Gmail) *</label>
+                        <input type="email" id="forgotEmail" placeholder="your@gmail.com" autocomplete="email">
+                    </div>
+                    <button type="button" id="btnSendOtp" class="btn-forgot-action">📧 OTP भेजें</button>
+                </div>
+                <div id="forgotStep2" style="display:none;">
+                    <div class="form-group">
+                        <label>OTP (6 अंक) *</label>
+                        <input type="text" id="forgotOtp" placeholder="123456" maxlength="6" inputmode="numeric" autocomplete="one-time-code">
+                    </div>
+                    <div class="form-group">
+                        <label>नया पासवर्ड *</label>
+                        <input type="password" id="forgotNewPassword" placeholder="कम से कम 6 अक्षर" autocomplete="new-password">
+                    </div>
+                    <div class="form-group">
+                        <label>पासवर्ड दोबारा *</label>
+                        <input type="password" id="forgotConfirmPassword" placeholder="पासवर्ड confirm करें" autocomplete="new-password">
+                    </div>
+                    <button type="button" id="btnResetPassword" class="btn-forgot-action">🔐 नया पासवर्ड सेट करें</button>
+                </div>
+                <button type="button" id="backToLogin" class="forgot-back-link back-blue">← लॉगिन पर वापस जाएँ</button>
+                <div id="forgotMessage" class="forgot-message"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="dashboard" id="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-logo">
+                <h2>🏥 LiveHospital</h2>
+            </div>
+            <ul class="sidebar-menu">
+                <li><a href="#" class="active" data-section="dashboard"><span class="icon">📊</span> Dashboard</a></li>
+                <li><a href="#" data-section="site-settings"><span class="icon">⚙️</span> Site Settings <span style="opacity:.85;font-size:.82em;">(वेबसाइट / SEO)</span></a></li>
+                <li><a href="#" data-section="hospitals"><span class="icon">🏥</span> Hospitals</a></li>
+                <li><a href="#" data-section="doctors"><span class="icon">👨‍⚕️</span> Doctors</a></li>
+                <li><a href="#" data-section="blood"><span class="icon">🩸</span> Blood Requests</a></li>
+                <li><a href="#" data-section="contact-messages"><span class="icon">📩</span> Contact Messages</a></li>
+                <li><a href="#" data-section="hospital-admins"><span class="icon">🏥👤</span> Hospital Admins</a></li>
+                <li><a href="#" data-section="blood-admins"><span class="icon">🩸👤</span> Blood Admins</a></li>
+                <li><a href="#" data-section="cities"><span class="icon">🏙️</span> Cities</a></li>
+                <li><a href="#" data-section="footer"><span class="icon">📋</span> Footer Settings</a></li>
+                <li><a href="#" data-section="hospital-card-label"><span class="icon">🏷️</span> हॉस्पिटल कार्ड लेबल</a></li>
+                <li><a href="#" data-section="page-content"><span class="icon">📄</span> Page Content</a></li>
+                <li><a href="#" data-section="admins"><span class="icon">👤</span> Super Admins</a></li>
+                <li><a href="index.html"><span class="icon">🌐</span> View Website</a></li>
+            </ul>
+        </aside>
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()" aria-hidden="true"></div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <button class="mobile-menu-btn" onclick="toggleSidebar()">☰ Menu</button>
+            
+            <!-- Top Bar -->
+            <div class="top-bar">
+                <h1 id="pageTitle">📊 Dashboard</h1>
+                <div class="user-info">
+                    <span>Welcome, <strong id="adminName">Admin</strong></span>
+                    <button class="btn-logout" onclick="logout()">Logout</button>
+                </div>
+            </div>
+
+            <!-- Alert -->
+            <div class="alert" id="alertBox"></div>
+
+            <!-- Dashboard Section -->
+            <section class="content-section active" id="section-dashboard">
+                <div class="stats-grid">
+                    <div class="stat-card hospitals">
+                        <div class="icon">🏥</div>
+                        <h3 id="statHospitals">0</h3>
+                        <p>Total Hospitals</p>
+                    </div>
+                    <div class="stat-card doctors">
+                        <div class="icon">👨‍⚕️</div>
+                        <h3 id="statDoctors">0</h3>
+                        <p>Total Doctors</p>
+                    </div>
+                    <div class="stat-card blood">
+                        <div class="icon">🩸</div>
+                        <h3 id="statBlood">0</h3>
+                        <p>Blood Requests</p>
+                    </div>
+                    <div class="stat-card contact-messages" style="border-top: 4px solid #f59e0b;">
+                        <div class="icon">📩</div>
+                        <h3 id="statContactMessages">0</h3>
+                        <p>Contact Messages</p>
+                    </div>
+                    <div class="stat-card hospital-admins" style="border-top: 4px solid #22c55e;">
+                        <div class="icon">🏥👤</div>
+                        <h3 id="statHospitalAdmins">0</h3>
+                        <p>Hospital Admins</p>
+                    </div>
+                    <div class="stat-card blood-admins" style="border-top: 4px solid #ef4444;">
+                        <div class="icon">🩸👤</div>
+                        <h3 id="statBloodAdmins">0</h3>
+                        <p>Blood Admins</p>
+                    </div>
+                    <div class="stat-card admins">
+                        <div class="icon">👤</div>
+                        <h3 id="statAdmins">0</h3>
+                        <p>Super Admins</p>
+                    </div>
+                </div>
+
+                <div class="quick-actions">
+                    <div class="quick-action-btn" onclick="showSection('hospitals'); openModal('hospital')">
+                        <div class="icon">➕</div>
+                        <p>Add Hospital</p>
+                    </div>
+                    <div class="quick-action-btn" onclick="showSection('doctors'); openModal('doctor')">
+                        <div class="icon">👨‍⚕️</div>
+                        <p>Add Doctor</p>
+                    </div>
+                    <div class="quick-action-btn" onclick="showSection('blood'); openModal('blood')">
+                        <div class="icon">🩸</div>
+                        <p>Add Blood Request</p>
+                    </div>
+                    <div class="quick-action-btn" onclick="showSection('hospital-admins'); openModal('hospitalAdmin')">
+                        <div class="icon">🏥👤</div>
+                        <p>Add Hospital Admin</p>
+                    </div>
+                    <div class="quick-action-btn" onclick="showSection('site-settings')">
+                        <div class="icon">⚙️</div>
+                        <p>Site Settings / SEO</p>
+                    </div>
+                    <div class="quick-action-btn" onclick="showSection('blood-admins'); openModal('bloodAdmin')">
+                        <div class="icon">🩸👤</div>
+                        <p>Add Blood Admin</p>
+                    </div>
+                    <div class="quick-action-btn" onclick="refreshData()">
+                        <div class="icon">🔄</div>
+                        <p>Refresh Data</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2>📋 Recent Activity</h2>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Action</th>
+                                    <th>Details</th>
+                                </tr>
+                            </thead>
+                            <tbody id="activityLog">
+                                <tr>
+                                    <td>Just now</td>
+                                    <td>Login</td>
+                                    <td>Admin logged in</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Hospitals Section -->
+            <section class="content-section" id="section-hospitals">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>🏥 All Hospitals</h2>
+                        <button class="btn-add" onclick="openModal('hospital')">➕ Add Hospital</button>
+                    </div>
+                    <div class="table-controls">
+                        <div class="search-box-admin">
+                            <input type="text" id="searchHospitals" placeholder="🔍 Hospital खोजें..." onkeyup="searchTable('hospitals')">
+                        </div>
+                        <div class="table-info" id="hospitalsInfo">Total: 0</div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Location</th>
+                                    <th>Type</th>
+                                    <th>Doctors</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="hospitalsTable">
+                                <!-- Loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-container" id="hospitalsPagination"></div>
+                </div>
+            </section>
+
+            <!-- Doctors Section -->
+            <section class="content-section" id="section-doctors">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>👨‍⚕️ All Doctors</h2>
+                        <button class="btn-add" onclick="openModal('doctor')">➕ Add Doctor</button>
+                    </div>
+                    <div class="table-controls">
+                        <div class="search-box-admin">
+                            <input type="text" id="searchDoctors" placeholder="🔍 Doctor खोजें..." onkeyup="searchTable('doctors')">
+                        </div>
+                        <div class="table-info" id="doctorsInfo">Total: 0</div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Specialty</th>
+                                    <th>Hospital</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="doctorsTable">
+                                <!-- Loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-container" id="doctorsPagination"></div>
+                </div>
+            </section>
+
+            <!-- Blood Requests Section -->
+            <section class="content-section" id="section-blood">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>🩸 Blood Requests</h2>
+                        <button class="btn-add" onclick="openModal('blood')">➕ Add Request</button>
+                    </div>
+                    <div class="table-controls">
+                        <div class="search-box-admin">
+                            <input type="text" id="searchBlood" placeholder="🔍 Blood Request खोजें..." onkeyup="searchTable('blood')">
+                        </div>
+                        <div class="table-info" id="bloodInfo">Total: 0</div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Blood Type</th>
+                                    <th>Hospital</th>
+                                    <th>Patient</th>
+                                    <th>Contact</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bloodTable">
+                                <!-- Loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-container" id="bloodPagination"></div>
+                </div>
+            </section>
+
+            <!-- Contact Messages Section -->
+            <section class="content-section" id="section-contact-messages">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>📩 Contact Messages</h2>
+                        <div style="display:flex;gap:10px;">
+                            <span class="badge-pending" id="pendingCount">0 Pending</span>
+                            <button class="btn-add" onclick="refreshContactMessages()">🔄 Refresh</button>
+                        </div>
+                    </div>
+                    <div class="table-controls">
+                        <div class="search-box-admin">
+                            <input type="text" id="searchContactMessages" placeholder="🔍 Message खोजें..." onkeyup="searchContactMessages()">
+                        </div>
+                        <div class="table-info" id="contactMessagesInfo">Total: 0</div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Subject</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="contactMessagesTable">
+                                <!-- Loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-container" id="contactMessagesPagination"></div>
+                </div>
+            </section>
+
+            <!-- Hospital Admins Section -->
+            <section class="content-section" id="section-hospital-admins">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>🏥👤 Hospital Admins</h2>
+                        <button class="btn-add" onclick="openModal('hospitalAdmin')">➕ Add Hospital Admin</button>
+                    </div>
+                    <div class="table-controls">
+                        <div class="search-box-admin">
+                            <input type="text" id="searchHospitalAdmins" placeholder="🔍 Hospital Admin खोजें..." onkeyup="searchTable('hospitalAdmins')">
+                        </div>
+                        <div class="table-info" id="hospitalAdminsInfo">Total: 0</div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Admin Name</th>
+                                    <th>Email</th>
+                                    <th>Hospital</th>
+                                    <th>Mobile</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="hospitalAdminsTable">
+                                <!-- Loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-container" id="hospitalAdminsPagination"></div>
+                </div>
+            </section>
+
+            <!-- Blood Admins Section -->
+            <section class="content-section" id="section-blood-admins">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>🩸👤 Blood Department Admins</h2>
+                        <button class="btn-add" onclick="openModal('bloodAdmin')">➕ Add Blood Admin</button>
+                    </div>
+                    <div class="table-controls">
+                        <div class="search-box-admin">
+                            <input type="text" id="searchBloodAdmins" placeholder="🔍 Blood Admin खोजें..." onkeyup="searchTable('bloodAdmins')">
+                        </div>
+                        <div class="table-info" id="bloodAdminsInfo">Total: 0</div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Admin Name</th>
+                                    <th>Email</th>
+                                    <th>Hospital</th>
+                                    <th>Mobile</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bloodAdminsTable">
+                                <!-- Loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-container" id="bloodAdminsPagination"></div>
+                </div>
+            </section>
+
+            <!-- Cities Section (Search by City buttons on website) -->
+            <section class="content-section" id="section-cities">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>🏙️ City Buttons (शहर के अनुसार खोजें)</h2>
+                        <button class="btn-add" onclick="openAddCityModal()">➕ Add City Button</button>
+                    </div>
+                    <div class="table-controls">
+                        <div class="table-info" id="citiesInfo">Total: 0 cities</div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Button Name</th>
+                                    <th>Link (value)</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="citiesTable">
+                                <!-- Loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Hospital card label (per hospital – top line on public card) -->
+            <section class="content-section" id="section-hospital-card-label">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>🏷️ हॉस्पिटल कार्ड लेबल</h2>
+                        <span style="color:#9ca3af;">यह पूरी साइट की ब्रांडिंग नहीं — चुने हुए हॉस्पिटल के कार्ड के ऊपर एक छोटी लाइन (जैसे टैगलाइन / NABH / Ayushman) दिखेगी</span>
+                    </div>
+                    <div style="padding:20px;">
+                        <div class="form-group" style="max-width:500px;margin-bottom:15px;">
+                            <label>हॉस्पिटल चुनें</label>
+                            <select id="hospitalCardLabelSelect" onchange="onHospitalCardLabelHospitalChange()" style="width:100%;padding:12px;background:#0d1117;border:1px solid #252d38;border-radius:8px;color:#fff;font-size:1rem;">
+                                <option value="">-- हॉस्पिटल चुनें --</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="max-width:500px;">
+                            <label>कार्ड पर लेबल (वेबसाइट पर उसी हॉस्पिटल कार्ड के ऊपर बीच में)</label>
+                            <input type="text" id="hospitalCardLabelInput" placeholder="उदा. Ayushman अस्पताल · NABH मान्यता" style="width:100%;padding:12px;background:#0d1117;border:1px solid #252d38;border-radius:8px;color:#fff;font-size:1rem;">
+                        </div>
+                        <button class="btn-add" onclick="saveHospitalCardLabel()" style="margin-top:15px;">💾 लेबल सेव करें</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Site Settings (SEO, sitemap, robots, full backup, caching) -->
+            <section class="content-section" id="section-site-settings">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>⚙️ Site Settings</h2>
+                        <span style="color:#9ca3af;">सामान्य, SEO, sitemap/robots, इंटीग्रेशन, पूर्ण बैकअप व कैशिंग — <code>server/data/site-settings.json</code></span>
+                    </div>
+                    <div class="footer-tabs" style="flex-wrap:wrap;">
+                        <button type="button" class="footer-tab-btn site-settings-tab-btn active" data-tab="basic" onclick="showSiteSettingsTab('basic', this)">🏠 सामान्य / Basic</button>
+                        <button type="button" class="footer-tab-btn site-settings-tab-btn" data-tab="seo" onclick="showSiteSettingsTab('seo', this)">🔍 SEO / Meta</button>
+                        <button type="button" class="footer-tab-btn site-settings-tab-btn" data-tab="urls" onclick="showSiteSettingsTab('urls', this)">🔗 Permalink &amp; फाइलें</button>
+                        <button type="button" class="footer-tab-btn site-settings-tab-btn" data-tab="images" onclick="showSiteSettingsTab('images', this)">🖼️ Alt टेक्स्ट</button>
+                        <button type="button" class="footer-tab-btn site-settings-tab-btn" data-tab="full-backup" onclick="showSiteSettingsTab('full-backup', this)">📦 पूर्ण बैकअप</button>
+                        <button type="button" class="footer-tab-btn site-settings-tab-btn" data-tab="caching" onclick="showSiteSettingsTab('caching', this)">⚡ कैशिंग</button>
+                    </div>
+
+                    <div class="footer-tab-content site-settings-tab-content active" id="site-settings-tab-basic" style="padding:20px;">
+                        <p style="color:#9ca3af;margin-bottom:16px;">वे सेटिंग्स जो ज़्यादातर CMS डैशबोर्ड में <strong>सामान्य / General</strong> में मिलती हैं।</p>
+                        <label style="color:#e5e7eb;">साइट का शीर्षक (Site Title)</label>
+                        <input type="text" id="siteBasicSiteTitle" placeholder="उदा. LiveHospital" style="width:100%;max-width:560px;margin:6px 0 14px;padding:10px;background:#0d1117;border:1px solid #252d38;border-radius:8px;color:#fff;">
+                        <label style="color:#e5e7eb;">टैगलाइन (Tagline)</label>
+                        <input type="text" id="siteBasicTagline" placeholder="छोटा वाक्य — साइट का उद्देश्य" style="width:100%;max-width:560px;margin:6px 0 14px;padding:10px;background:#0d1117;border:1px solid #252d38;border-radius:8px;color:#fff;">
+                        <h4 style="color:#fff;margin:18px 0 10px;">📞 संपर्क विवरण (Contact Details)</h4>
+                        <p style="color:#9ca3af;margin-bottom:12px;max-width:720px;line-height:1.5;">ये विवरण वेबसाइट, संपर्क पेज, गोपनीयता/नियम पेज और फुटर में दिखेंगे।</p>
+                        <label style="color:#e5e7eb;">फोन नंबर</label>
+                        <input type="tel" id="siteContactPhone" placeholder="उदा. +91 98XXX XXXXX" style="width:100%;max-width:400px;margin:6px 0 12px;padding:10px;background:#0d1117;border:1px solid #252d38;border-radius:8px;color:#fff;">
+                        <label style="color:#e5e7eb;">WhatsApp नंबर</label>
+                        <input type="tel" id="siteContactWhatsapp" placeholder="उदा. +91 98XXX XXXXX" style="width:100%;max-width:400px;margin:6px 0 12px;padding:10px;background:#0d1117;border:1px solid #252d38;border-radius:8px;color:#fff;">
+                        <label style="color:#e5e7eb;">सपोर्ट ईमेल (पब्लिक — mailto लिंक)</label>
+                        <input type="email" id="siteContactSupportEmail" placeholder="support@livehospital.org" style="width:100%;max-width:400px;margin:6px 0 12px;padding:10px;background:#0d1117;border:1px solid #252d38;border-radius:8px;color:#fff;">
+                        <label style="color:#e5e7eb;">ईमेल फॉरवर्डिंग — असली इनबॉक्स (Gmail)</label>
+                        <input type="email" id="siteContactOwnerEmail" placeholder="sharma.sachinctr@gmail.com" style="width:100%;max-width:400px;margin:6px 0 8px;padding:10px;background:#0d1117;border:1px solid #252d38;border-radius:8px;color:#fff;">
+                        <p style="color:#9ca3af;margin:0 0 14px;max-width:720px;line-height:1.5;font-size:.9rem;">Registrar पर <code>support@livehospital.org</code> → ऊपर वाले Gmail पर <strong>email forwarding</strong> सेट करें। विस्तृत गाइड: <code>deploy/EMAIL_SETUP.md</code></p>
+                        <label style="color:#e5e7eb;">गोपनीयता ईमेल (Privacy)</label>
+                        <input type="email" id="siteContactPrivacyEmail" placeholder="privacy@livehospital.org" style="width:100%;max-width:400px;margin:6px 0 12px;padding:10px;background:#0d1117;border:1px solid #252d38;border-radius:8px;color:#fff;">
+                        <label style="color:#e5e7eb;">कार्य समय (Hours)</label>
+                        <input type="text" id="siteContactHours" placeholder="सोमवार - शनिवार (9AM - 6PM)" style="width:100%;max-width:560px;margin:6px 0 14px;padding:10px;background:#0d1117;border:1px solid #252d38;border-radius:8px;color:#fff;">
+                        <h4 style="color:#fff;margin:18px 0 8px;">सोशल मीडिया (पूर्ण URL)</h4>
+                        <p style="color:#9ca3af;margin:0 0 10px;max-width:720px;font-size:.9rem;">खाली छोड़ें तो फुटर में वह लिंक छिप जाएगा। WhatsApp के लिए ऊपर नंबर या नीचे सीधा लिंक।</p>
+                        <label style="color:#e5e7eb;">Facebook</label>
+                        <input type="url" id="siteSocialFacebook" placeholder="https://facebook.com/yourpage" style="width:100%;max-width:560px;margin:6px 0 12px;padding:10px;background:#0d1117;border:1px solid #252d38;border-radius:8px;color:#fff;">
+                        <label style="color:#e5e7eb;">Instagram</label>
+                        <input type="url" id="siteSocialInstagram" placeholder="https://instagram.com/yourpage" style="width:100%;max-width:560px;margin:6px 0 12px;padding:10px;background:#0d1117;border:1px solid #252d38;border-radius:8px;color:#fff;">
+                        <label style="color:#e5e7eb;">YouTube</label>
+                        <input type="url" id="siteSocialYoutube" placeholder="https://youtube.com/@yourchannel" style="width:100%;max-width:560px;margin:6px 0 12px;padding:10px;background:#0d1117;border:1px solid #252d38;border-radius:8px;color:#fff;">
+                        <label style="color:#e5e7eb;">Twitter / X</label>
+                        <input type="url" id="siteSocialTwitter" placeholder="https://x.com/yourhandle" style="width:100%;max-width:560px;margin:6px 0 12px;padding:10px;background:#0d1117;border:1px solid #252d38;border-radius:8px;color:#fff;">
+                        <label style="color:#e5e7eb;">WhatsApp (वैकल्पिक — सीधा wa.me लिंक)</label>
+                        <input type="url" id="siteSocialWhatsapp" placeholder="https://wa.me/919876543210" style="width:100%;max-width:560px;margin:6px 0 14px;padding:10px;background:#0d1117;border:1px solid #252d38;border-radius:8px;color:#fff;">
+                        <label style="color:#e5e7eb;">वेबसाइट URL (पब्लिक बेस — sitemap / robots / ऐब्सोल्यूट लिंक)</label>
+                        <input type="text" id="sitePublicBaseUrl" placeholder="https://www.example.com" style="width:100%;max-width:560px;margin:6px 0 14px;padding:10px;background:#0d1117;border:1px solid #252d38;border-radius:8px;color:#fff;">
+                        <h4 style="color:#fff;margin:18px 0 8px;">दृश्यता (Visibility)</h4>
+                        <label style="color:#d1d5db;display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;max-width:640px;line-height:1.45;"><input type="checkbox" id="siteMaintenanceMode" style="margin-top:4px;flex-shrink:0;"> <span><strong>Maintenance Mode</strong> — पब्लिक साइट बंद (केवल <code>/admin</code>, <code>/hospital-admin</code>, <code>/blood-admin</code>, <code>/api</code> व CSS/JS/इमेज जैसी स्टैटिक फाइलें चालू)।</span></label>
+                        <label style="color:#9ca3af;display:block;margin-bottom:6px;">मेंटेनेंस संदेश (आगंतुकों को दिखेगा)</label>
+                        <textarea id="siteMaintenanceMessage" rows="3" style="width:100%;max-width:640px;padding:10px;background:#0d1117;border:1px solid #252d38;border-radius:8px;color:#fff;"></textarea>
+                        <p style="color:#9ca3af;margin:14px 0 8px;font-size:.9rem;"><strong>Robots.txt</strong> व <strong>Sitemap</strong> की विस्तृत लाइनें <em>Permalink &amp; फाइलें</em> टैब में सेट करें; वे लाइव <code>/robots.txt</code> व <code>/sitemap.xml</code> पर जाती हैं।</p>
+                        <h4 style="color:#fff;margin:22px 0 10px;">एपीआई व एकीकरण (API &amp; Integration)</h4>
+                        <p style="color:#9ca3af;margin-bottom:12px;max-width:720px;line-height:1.5;">Google Analytics 4 (Measurement ID) या Google Tag Manager (Container ID) यहाँ दें; <strong>सेव</strong> के बाद पब्लिक पेजों पर <code>seo-bootstrap.js</code> स्वचालित लोड करेगा। दोनों भरे हों तो GTM प्राथमिकता लेता है। GA4 ID पाने के लिए: <a href="https://analytics.google.com/" target="_blank" rel="noopener" style="color:#38bdf8;">analytics.google.com</a> → Admin → Data Streams → Measurement ID (<code>G-XXXXXXXX</code>)।</p>
+                        <label style="color:#e5e7eb;">Google Analytics 4 — Measurement ID</label>
+                        <input type="text" id="siteGA4Id" placeholder="G-XXXXXXXXXX" style="width:100%;max-width:400px;margin:6px 0 12px;padding:10px;background:#0d1117;border:1px solid #252d38;border-radius:8px;color:#fff;font-family:monospace;">
+                        <label style="color:#e5e7eb;">Google Tag Manager — Container ID</label>
+                        <input type="text" id="siteGTMId" placeholder="GTM-XXXXXXX" style="width:100%;max-width:400px;margin:6px 0 12px;padding:10px;background:#0d1117;border:1px solid #252d38;border-radius:8px;color:#fff;font-family:monospace;">
+                        <label style="color:#e5e7eb;">अन्य सेवाओं के लिए नोट्स (Pixel, Search Console, आदि)</label>
+                        <textarea id="siteIntegrationsNotes" rows="4" style="width:100%;max-width:720px;margin-top:6px;padding:10px;background:#0d1117;border:1px solid #252d38;border-radius:8px;color:#fff;"></textarea>
+                        <div style="margin-top:22px;padding:14px 16px;background:#111827;border:1px solid #252d38;border-radius:10px;max-width:720px;">
+                            <h4 style="color:#e5e7eb;margin:0 0 10px;">ब्राउज़र की साइट सेटिंग (जानकारी)</h4>
+                            <p style="color:#9ca3af;margin:0;line-height:1.55;font-size:.92rem;">कैमरा, माइक, लोकेशन, पॉप-अप ब्लॉक या जावास्क्रिप्ट चालू/बंद — ये विकल्प <strong>आगंतुक के ब्राउज़र</strong> (Chrome, Edge, Firefox) में होते हैं, इस डैशबोर्ड से कंट्रोल नहीं होते। उपयोगकर्ता को साइट की अनुमति ब्राउज़र के पते बार / सेटिंग्स से मिलती है।</p>
+                        </div>
+                    </div>
+
+                    <div class="footer-tab-content site-settings-tab-content" id="site-settings-tab-seo" style="padding:20px;">
+                        <p style="color:#9ca3af;margin-bottom:15px;">हर पेज का <strong>Title</strong> और <strong>Meta Description</strong> (Google सर्च स्निपेट)। सेव के बाद पब्लिक पेज <code>seo-bootstrap.js</code> से अपडेट होते हैं।</p>
+                        <div id="siteSeoPagesForm" style="display:flex;flex-direction:column;gap:16px;"></div>
+                    </div>
+
+                    <div class="footer-tab-content site-settings-tab-content" id="site-settings-tab-urls" style="padding:20px;">
+                        <h3 style="color:#fff;margin-bottom:10px;">Permalink (यूज़र-फ्रेंडली URL)</h3>
+                        <p style="color:#9ca3af;margin-bottom:12px;">सर्वर पर ये रूट सक्रिय हैं (बिना <code>.html</code>):</p>
+                        <ul style="color:#d1d5db;margin-left:20px;line-height:1.8;">
+                            <li><code>/</code> — होम</li>
+                            <li><code>/privacy</code>, <code>/terms</code>, <code>/cookies</code>, <code>/contact</code></li>
+                        </ul>
+                        <p style="color:#9ca3af;margin:16px 0 8px;">साइटमैप व रोबोट्स (लाइव सर्वर चालू हो तब खोलें):</p>
+                        <p><a href="/sitemap.xml" target="_blank" rel="noopener" style="color:#60a5fa;">/sitemap.xml</a> &nbsp;|&nbsp; <a href="/robots.txt" target="_blank" rel="noopener" style="color:#60a5fa;">/robots.txt</a></p>
+                        <h4 style="color:#e5e7eb;margin:20px 0 8px;">Sitemap — अतिरिक्त पथ (प्रति लाइन, / से शुरू)</h4>
+                        <textarea id="siteSitemapExtra" rows="4" style="width:100%;max-width:600px;padding:10px;background:#0d1117;border:1px solid #252d38;border-radius:8px;color:#fff;font-family:monospace;"></textarea>
+                        <h4 style="color:#e5e7eb;margin:20px 0 8px;">Robots — अस्वीकृत पथ (प्रति लाइन)</h4>
+                        <label style="color:#d1d5db;display:flex;align-items:center;gap:8px;margin-bottom:10px;"><input type="checkbox" id="siteRobotsAllowAll"> पूरे साइट को Allow / * (बंद = केवल Disallow)</label>
+                        <textarea id="siteRobotsDisallow" rows="5" style="width:100%;max-width:600px;padding:10px;background:#0d1117;border:1px solid #252d38;border-radius:8px;color:#fff;font-family:monospace;"></textarea>
+                    </div>
+
+                    <div class="footer-tab-content site-settings-tab-content" id="site-settings-tab-images" style="padding:20px;">
+                        <p style="color:#9ca3af;margin-bottom:12px;">इमेज SEO: लोगो / मुख्य ग्राफिक्स के लिए वर्णनात्मक <strong>alt</strong> टेक्स्ट। HTML में मैन्युअल <code>alt="..."</code> जोड़ते समय इन दिशानिर्देशों का पालन करें।</p>
+                        <label style="color:#e5e7eb;">लोगो / साइट आइकन Alt टेक्स्ट</label>
+                        <input type="text" id="siteLogoAlt" style="width:100%;max-width:600px;margin:6px 0 16px;padding:10px;background:#0d1117;border:1px solid #252d38;border-radius:8px;color:#fff;">
+                        <label style="color:#e5e7eb;">Alt टेक्स्ट दिशानिर्देश (टीम के लिए नोट्स)</label>
+                        <textarea id="siteImageGuidelines" rows="6" style="width:100%;max-width:700px;margin-top:6px;padding:10px;background:#0d1117;border:1px solid #252d38;border-radius:8px;color:#fff;"></textarea>
+                    </div>
+
+                    <div class="footer-tab-content site-settings-tab-content" id="site-settings-tab-full-backup" style="padding:20px;">
+                        <p style="color:#93c5fd;margin-bottom:12px;max-width:760px;line-height:1.5;font-size:.92rem;"><strong>ज़रूरी:</strong> डाउनलोड के लिए <code>server</code> फ़ोल्डर से <code>node server.js</code> चालू हो और आप <strong>उसी पोर्ट</strong> पर खोलें — उदा. <code>http://localhost:5000/admin</code>। VS Code Live Server / सिर्फ HTML फाइल खोलने पर API 404 देगी; कोड अपडेट के बाद सर्वर <strong>रीस्टार्ट</strong> करें।</p>
+                        <p style="color:#9ca3af;margin-bottom:14px;max-width:760px;line-height:1.55;"><strong>पूर्ण बैकअप</strong> में <code>server/data/*.json</code> (साइट सेटिंग्स आदि) और <strong>MySQL का पूरा डेटा</strong> (हॉस्पिटल, डॉक्टर, एडमिन, आदि) एक JSON फाइल में आता है। नई होस्टिंग पर पहले <strong>वही Node + MySQL + कोड फाइलें</strong> डिप्लॉय करें, फिर यहाँ से अपलोड कर रिस्टोर करें।</p>
+                        <p style="color:#fbbf24;margin-bottom:16px;max-width:720px;font-size:.92rem;">⚠️ अपलोड से <strong>मौजूदा डेटाबेस पूरी तरह रीप्लेस</strong> हो जाएगा। गलत फाइल से पहले डाउनलोड से बैकअप ले लें।</p>
+                        <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-bottom:20px;">
+                            <button type="button" class="btn-submit" onclick="downloadFullSiteBackup()">⬇️ पूर्ण बैकअप डाउनलोड (JSON)</button>
+                        </div>
+                        <div style="border:1px solid #252d38;border-radius:10px;padding:16px;max-width:640px;background:#111827;">
+                            <label style="color:#e5e7eb;display:block;margin-bottom:8px;">बैकअप JSON फाइल चुनें (पहले यहीं से डाउनलोड की हुई)</label>
+                            <input type="file" id="fullBackupFileInput" accept=".json,application/json" style="color:#9ca3af;margin-bottom:12px;">
+                            <button type="button" class="btn-add" onclick="uploadFullSiteBackup()">⬆️ अपलोड करके रिस्टोर करें</button>
+                        </div>
+                    </div>
+
+                    <div class="footer-tab-content site-settings-tab-content" id="site-settings-tab-caching" style="padding:20px;">
+                        <p style="color:#9ca3af;margin-bottom:12px;"><strong>स्पीड / कैशिंग:</strong> CSS, JS, इमेज आदि पर <code>Cache-Control: max-age=...</code>। HTML पेज हमेशा ताज़ा रखे जाते हैं।</p>
+                        <label style="color:#d1d5db;display:flex;align-items:center;gap:8px;margin-bottom:12px;"><input type="checkbox" id="siteCachingEnabled"> स्टैटिक एसेट कैशिंग चालू</label>
+                        <label style="color:#e5e7eb;">कैश अवधि (सेकंड)</label>
+                        <input type="number" id="siteCachingMaxAge" min="0" step="60" style="width:200px;margin:6px 0 12px;padding:10px;background:#0d1117;border:1px solid #252d38;border-radius:8px;color:#fff;">
+                        <label style="color:#e5e7eb;display:block;">नोट्स</label>
+                        <textarea id="siteCachingNotes" rows="3" style="width:100%;max-width:700px;margin-top:6px;padding:10px;background:#0d1117;border:1px solid #252d38;border-radius:8px;color:#fff;"></textarea>
+                    </div>
+
+                    <div style="padding:0 20px 20px;">
+                        <button type="button" class="btn-submit" onclick="saveSiteSettingsAdmin()">💾 सभी Site Settings सेव करें</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Footer Settings Section -->
+            <section class="content-section" id="section-footer">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>📋 Footer & Sub Footer Settings</h2>
+                    </div>
+                    
+                    <!-- Footer Tabs -->
+                    <div class="footer-tabs">
+                        <button class="footer-tab-btn active" onclick="showFooterTab('contact')">📞 Contact Us</button>
+                        <button class="footer-tab-btn" onclick="showFooterTab('important')">⭐ Important</button>
+                        <button class="footer-tab-btn" onclick="showFooterTab('quicklinks')">🔗 Quick Links</button>
+                        <button class="footer-tab-btn" onclick="showFooterTab('follow')">📱 Follow</button>
+                    </div>
+
+                    <!-- Contact Us Tab -->
+                    <div class="footer-tab-content active" id="footer-tab-contact">
+                        <div class="card-header">
+                            <h3>📞 Contact Us Links</h3>
+                            <button class="btn-add" onclick="openFooterModal('contact')">➕ Add Link</button>
+                        </div>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Icon</th>
+                                        <th>Title</th>
+                                        <th>Value/Link</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="contactTable">
+                                    <!-- Loaded dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Important Tab -->
+                    <div class="footer-tab-content" id="footer-tab-important">
+                        <div class="card-header">
+                            <h3>⭐ Important Links</h3>
+                            <button class="btn-add" onclick="openFooterModal('important')">➕ Add Link</button>
+                        </div>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>URL</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="importantTable">
+                                    <!-- Loaded dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Quick Links Tab -->
+                    <div class="footer-tab-content" id="footer-tab-quicklinks">
+                        
+                        <div class="card-header">
+                            <h3>🔗 Quick Links</h3>
+                            <button class="btn-add" onclick="openFooterModal('quicklinks')">➕ Add Link</button>
+                        </div>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>URL</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="quicklinksTable">
+                                    <!-- Loaded dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Follow Tab -->
+                    <div class="footer-tab-content" id="footer-tab-follow">
+                        
+                        <div class="card-header">
+                            <h3>📱 Social Media Links</h3>
+                            <button class="btn-add" onclick="openFooterModal('follow')">➕ Add Social Link</button>
+                        </div>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Icon</th>
+                                        <th>Platform</th>
+                                        <th>URL</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="followTable">
+                                    <!-- Loaded dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Page Content Section -->
+            <section class="content-section" id="section-page-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>📄 Page Content Management</h2>
+                        <span style="color:#9ca3af;">पेज का कंटेंट यहां से edit करें</span>
+                    </div>
+                    
+                    <!-- Page Tabs -->
+                    <div class="page-tabs">
+                        <button class="page-tab-btn active" onclick="showPageTab('privacy')">🔒 गोपनीयता नीति</button>
+                        <button class="page-tab-btn" onclick="showPageTab('terms')">📜 नियम और शर्तें</button>
+                        <button class="page-tab-btn" onclick="showPageTab('cookies')">🍪 कुकी नीति</button>
+                    </div>
+
+                    <!-- Privacy Policy Tab -->
+                    <div class="page-tab-content active" id="page-tab-privacy">
+                        <h3 style="color:#fff;margin-bottom:15px;">🔒 गोपनीयता नीति (Privacy Policy)</h3>
+                        
+                        <!-- Editor Toolbar -->
+                        <div class="editor-toolbar" id="toolbar-privacy">
+                            <select onchange="formatHeading('privacy', this.value)">
+                                <option value="">Heading</option>
+                                <option value="h1">H1 - बड़ी Heading</option>
+                                <option value="h2">H2 - Heading</option>
+                                <option value="h3">H3 - Sub Heading</option>
+                                <option value="h4">H4 - छोटी Heading</option>
+                                <option value="h5">H5 - Mini Heading</option>
+                                <option value="h6">H6 - Smallest</option>
+                                <option value="p">Paragraph</option>
+                            </select>
+                            <div class="separator"></div>
+                            <button onclick="formatText('bold')" title="Bold (Ctrl+B)"><b>B</b></button>
+                            <button onclick="formatText('italic')" title="Italic (Ctrl+I)"><i>I</i></button>
+                            <button onclick="formatText('underline')" title="Underline (Ctrl+U)"><u>U</u></button>
+                            <button onclick="formatText('strikeThrough')" title="Strikethrough"><s>S</s></button>
+                            <div class="separator"></div>
+                            <button onclick="formatText('insertUnorderedList')" title="Bullet List">• List</button>
+                            <button onclick="formatText('insertOrderedList')" title="Numbered List">1. List</button>
+                            <div class="separator"></div>
+                            <button onclick="insertLink()" title="Insert Link">🔗 Link</button>
+                            <button onclick="formatText('removeFormat')" title="Clear Formatting">✖ Clear</button>
+                            <div class="separator"></div>
+                            <button onclick="formatText('justifyLeft')" title="Align Left">⬅</button>
+                            <button onclick="formatText('justifyCenter')" title="Align Center">⬛</button>
+                            <button onclick="formatText('justifyRight')" title="Align Right">➡</button>
+                            <div class="separator"></div>
+                            <button onclick="insertQuote()" title="Blockquote">❝ Quote</button>
+                            <button onclick="insertHR()" title="Horizontal Line">― Line</button>
+                        </div>
+                        
+                        <!-- Rich Text Editor -->
+                        <div class="rich-editor" id="editor-privacy" contenteditable="true" oninput="autoSavePageContent('privacy')">
+                            <h1>गोपनीयता नीति</h1>
+                            <p>यहां अपनी Privacy Policy लिखें...</p>
+                        </div>
+                        
+                        <div style="margin-top:15px;display:flex;gap:10px;">
+                            <button class="btn-submit" onclick="savePageContent('privacy')">💾 Save Privacy Policy</button>
+                            <button class="btn-add" onclick="previewPageContent('privacy')" style="background:#6b7280;">👁️ Preview</button>
+                        </div>
+                    </div>
+
+                    <!-- Terms Tab -->
+                    <div class="page-tab-content" id="page-tab-terms">
+                        <h3 style="color:#fff;margin-bottom:15px;">📜 नियम और शर्तें (Terms & Conditions)</h3>
+                        
+                        <!-- Editor Toolbar -->
+                        <div class="editor-toolbar" id="toolbar-terms">
+                            <select onchange="formatHeading('terms', this.value)">
+                                <option value="">Heading</option>
+                                <option value="h1">H1 - बड़ी Heading</option>
+                                <option value="h2">H2 - Heading</option>
+                                <option value="h3">H3 - Sub Heading</option>
+                                <option value="h4">H4 - छोटी Heading</option>
+                                <option value="h5">H5 - Mini Heading</option>
+                                <option value="h6">H6 - Smallest</option>
+                                <option value="p">Paragraph</option>
+                            </select>
+                            <div class="separator"></div>
+                            <button onclick="formatText('bold')" title="Bold (Ctrl+B)"><b>B</b></button>
+                            <button onclick="formatText('italic')" title="Italic (Ctrl+I)"><i>I</i></button>
+                            <button onclick="formatText('underline')" title="Underline (Ctrl+U)"><u>U</u></button>
+                            <button onclick="formatText('strikeThrough')" title="Strikethrough"><s>S</s></button>
+                            <div class="separator"></div>
+                            <button onclick="formatText('insertUnorderedList')" title="Bullet List">• List</button>
+                            <button onclick="formatText('insertOrderedList')" title="Numbered List">1. List</button>
+                            <div class="separator"></div>
+                            <button onclick="insertLink()" title="Insert Link">🔗 Link</button>
+                            <button onclick="formatText('removeFormat')" title="Clear Formatting">✖ Clear</button>
+                            <div class="separator"></div>
+                            <button onclick="formatText('justifyLeft')" title="Align Left">⬅</button>
+                            <button onclick="formatText('justifyCenter')" title="Align Center">⬛</button>
+                            <button onclick="formatText('justifyRight')" title="Align Right">➡</button>
+                            <div class="separator"></div>
+                            <button onclick="insertQuote()" title="Blockquote">❝ Quote</button>
+                            <button onclick="insertHR()" title="Horizontal Line">― Line</button>
+                        </div>
+                        
+                        <!-- Rich Text Editor -->
+                        <div class="rich-editor" id="editor-terms" contenteditable="true" oninput="autoSavePageContent('terms')">
+                            <h1>नियम और शर्तें</h1>
+                            <p>यहां अपने Terms & Conditions लिखें...</p>
+                        </div>
+                        
+                        <div style="margin-top:15px;display:flex;gap:10px;">
+                            <button class="btn-submit" onclick="savePageContent('terms')">💾 Save Terms</button>
+                            <button class="btn-add" onclick="previewPageContent('terms')" style="background:#6b7280;">👁️ Preview</button>
+                        </div>
+                    </div>
+
+                    <!-- Cookies Tab -->
+                    <div class="page-tab-content" id="page-tab-cookies">
+                        <h3 style="color:#fff;margin-bottom:15px;">🍪 कुकी नीति (Cookie Policy)</h3>
+                        
+                        <!-- Editor Toolbar -->
+                        <div class="editor-toolbar" id="toolbar-cookies">
+                            <select onchange="formatHeading('cookies', this.value)">
+                                <option value="">Heading</option>
+                                <option value="h1">H1 - बड़ी Heading</option>
+                                <option value="h2">H2 - Heading</option>
+                                <option value="h3">H3 - Sub Heading</option>
+                                <option value="h4">H4 - छोटी Heading</option>
+                                <option value="h5">H5 - Mini Heading</option>
+                                <option value="h6">H6 - Smallest</option>
+                                <option value="p">Paragraph</option>
+                            </select>
+                            <div class="separator"></div>
+                            <button onclick="formatText('bold')" title="Bold (Ctrl+B)"><b>B</b></button>
+                            <button onclick="formatText('italic')" title="Italic (Ctrl+I)"><i>I</i></button>
+                            <button onclick="formatText('underline')" title="Underline (Ctrl+U)"><u>U</u></button>
+                            <button onclick="formatText('strikeThrough')" title="Strikethrough"><s>S</s></button>
+                            <div class="separator"></div>
+                            <button onclick="formatText('insertUnorderedList')" title="Bullet List">• List</button>
+                            <button onclick="formatText('insertOrderedList')" title="Numbered List">1. List</button>
+                            <div class="separator"></div>
+                            <button onclick="insertLink()" title="Insert Link">🔗 Link</button>
+                            <button onclick="formatText('removeFormat')" title="Clear Formatting">✖ Clear</button>
+                            <div class="separator"></div>
+                            <button onclick="formatText('justifyLeft')" title="Align Left">⬅</button>
+                            <button onclick="formatText('justifyCenter')" title="Align Center">⬛</button>
+                            <button onclick="formatText('justifyRight')" title="Align Right">➡</button>
+                            <div class="separator"></div>
+                            <button onclick="insertQuote()" title="Blockquote">❝ Quote</button>
+                            <button onclick="insertHR()" title="Horizontal Line">― Line</button>
+                        </div>
+                        
+                        <!-- Rich Text Editor -->
+                        <div class="rich-editor" id="editor-cookies" contenteditable="true" oninput="autoSavePageContent('cookies')">
+                            <h1>कुकी नीति</h1>
+                            <p>यहां अपनी Cookie Policy लिखें...</p>
+                        </div>
+                        
+                        <div style="margin-top:15px;display:flex;gap:10px;">
+                            <button class="btn-submit" onclick="savePageContent('cookies')">💾 Save Cookie Policy</button>
+                            <button class="btn-add" onclick="previewPageContent('cookies')" style="background:#6b7280;">👁️ Preview</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Super Admins Section -->
+            <section class="content-section" id="section-admins">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>👤 Super Admins</h2>
+                        <button class="btn-add" onclick="openModal('admin')">➕ Add Super Admin</button>
+                    </div>
+                    <div class="table-controls">
+                        <div class="search-box-admin">
+                            <input type="text" id="searchAdmins" placeholder="🔍 Admin खोजें..." onkeyup="searchTable('admins')">
+                        </div>
+                        <div class="table-info" id="adminsInfo">Total: 0</div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Username</th>
+                                    <th>Role</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminsTable">
+                                <!-- Loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-container" id="adminsPagination"></div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Add Hospital Modal -->
+    <div class="modal" id="hospitalModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="hospitalModalTitle">🏥 Add Hospital</h2>
+                <button class="btn-close" onclick="closeModal('hospital')">&times;</button>
+            </div>
+            <form id="hospitalForm">
+                <input type="hidden" id="hospitalId" value="">
+                <div class="form-group">
+                    <label>Hospital Name *</label>
+                    <input type="text" id="hospitalName" placeholder="Enter hospital name" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Location *</label>
+                        <input type="text" id="hospitalLocation" placeholder="City name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>City Code *</label>
+                        <input type="text" id="hospitalCity" placeholder="e.g. delhi, mumbai" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Type *</label>
+                        <select id="hospitalType" required>
+                            <option value="GOV">सरकारी (Government)</option>
+                            <option value="PRIVATE">प्राइवेट (Private)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Departments</label>
+                        <input type="number" id="hospitalDepts" placeholder="10" value="10">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Latitude</label>
+                        <input type="text" id="hospitalLat" placeholder="28.5672">
+                    </div>
+                    <div class="form-group">
+                        <label>Longitude</label>
+                        <input type="text" id="hospitalLng" placeholder="77.2100">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>कार्ड लेबल (वैकल्पिक — मुख्य साइट पर इस हॉस्पिटल के कार्ड के ऊपर)</label>
+                    <input type="text" id="hospitalCardBranding" placeholder="उदा. Ayushman · NABH मान्यता">
+                </div>
+                <button type="submit" class="btn-submit" id="hospitalSubmitBtn">💾 Save Hospital</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Doctor Modal -->
+    <div class="modal" id="doctorModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>👨‍⚕️ Add Doctor</h2>
+                <button class="btn-close" onclick="closeModal('doctor')">&times;</button>
+            </div>
+            <form id="doctorForm">
+                <div class="form-group">
+                    <label>Doctor Name *</label>
+                    <input type="text" id="doctorName" placeholder="डॉ. राजेश शर्मा" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Specialty *</label>
+                        <input type="text" id="doctorSpecialty" placeholder="कार्डियोलॉजी" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Experience</label>
+                        <input type="text" id="doctorExperience" placeholder="10 वर्ष">
+                    </div>
+                </div>
+                <div class="form-group" style="position: relative;">
+                    <label>Hospital *</label>
+                    <input type="text" id="doctorHospital" placeholder="Hospital का नाम टाइप करें..." required autocomplete="off" onkeyup="showDoctorHospitalSuggestions(this.value)" onfocus="showDoctorHospitalSuggestions(this.value)">
+                    <input type="hidden" id="doctorHospitalId">
+                    <div id="doctorHospitalSuggestions" class="autocomplete-suggestions"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Status *</label>
+                        <select id="doctorStatus" required>
+                            <option value="available">उपलब्ध (Available)</option>
+                            <option value="busy">व्यस्त (Busy)</option>
+                            <option value="leave">छुट्टी पर (On Leave)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Fees</label>
+                        <input type="text" id="doctorFees" placeholder="₹500">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Timing</label>
+                    <input type="text" id="doctorTiming" placeholder="9:00 AM - 5:00 PM">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Qualification (Tags)</label>
+                        <input type="text" id="doctorQualification" placeholder="MBBS, MD, Senior Resident">
+                    </div>
+                    <div class="form-group">
+                        <label>Sub-Specialization</label>
+                        <input type="text" id="doctorSubSpecialization" placeholder="हार्ट फेलियर स्पेशलिस्ट">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Room No.</label>
+                        <input type="text" id="doctorRoom" placeholder="203">
+                    </div>
+                    <div class="form-group">
+                        <label>Floor</label>
+                        <input type="text" id="doctorFloor" placeholder="दूसरी / 2">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Block</label>
+                        <input type="text" id="doctorBlock" placeholder="B">
+                    </div>
+                    <div class="form-group"></div>
+                </div>
+                <button type="submit" class="btn-submit">💾 Save Doctor</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Blood Request Modal -->
+    <div class="modal" id="bloodModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🩸 Add Blood Request</h2>
+                <button class="btn-close" onclick="closeModal('blood')">&times;</button>
+            </div>
+            <form id="bloodForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Blood Type *</label>
+                        <select id="bloodType" required>
+                            <option value="O+">O+</option>
+                            <option value="O-">O-</option>
+                            <option value="A+">A+</option>
+                            <option value="A-">A-</option>
+                            <option value="B+">B+</option>
+                            <option value="B-">B-</option>
+                            <option value="AB+">AB+</option>
+                            <option value="AB-">AB-</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="position: relative;">
+                        <label>Hospital *</label>
+                        <input type="text" id="bloodHospital" placeholder="Hospital का नाम टाइप करें..." required autocomplete="off" onkeyup="showBloodHospitalSuggestions(this.value)" onfocus="showBloodHospitalSuggestions(this.value)">
+                        <input type="hidden" id="bloodHospitalId">
+                        <div id="bloodHospitalSuggestions" class="autocomplete-suggestions"></div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Patient Name *</label>
+                    <input type="text" id="bloodPatient" placeholder="Patient name" required>
+                </div>
+                <div class="form-group">
+                    <label>Contact Number *</label>
+                    <input type="tel" id="bloodContact" placeholder="9876543210" required>
+                </div>
+                <div class="form-group">
+                    <label>Message</label>
+                    <textarea id="bloodMessage" rows="3" placeholder="Urgent blood needed..."></textarea>
+                </div>
+                <button type="submit" class="btn-submit">💾 Add Request</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Hospital Admin Modal -->
+    <div class="modal" id="hospitalAdminModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="hospitalAdminModalTitle">🏥👤 Add Hospital Admin</h2>
+                <button class="btn-close" onclick="closeModal('hospitalAdmin')">&times;</button>
+            </div>
+            <form id="hospitalAdminForm">
+                <input type="hidden" id="hospitalAdminId">
+                <div class="form-group">
+                    <label>Admin Name *</label>
+                    <input type="text" id="hospitalAdminName" placeholder="Admin का नाम" required>
+                </div>
+                <div class="form-group">
+                    <label>Email (Gmail) *</label>
+                    <input type="email" id="hospitalAdminEmail" placeholder="admin@gmail.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Password *</label>
+                    <input type="password" id="hospitalAdminPassword" placeholder="Password">
+                </div>
+                <div class="form-group" style="position: relative;">
+                    <label>Hospital *</label>
+                    <input type="text" id="hospitalAdminHospital" placeholder="Hospital का नाम टाइप करें..." required autocomplete="off" onkeyup="showHospitalSuggestions(this.value)" onfocus="showHospitalSuggestions(this.value)">
+                    <div id="hospitalSuggestions" class="autocomplete-suggestions"></div>
+                </div>
+                <div class="form-group">
+                    <label>Mobile Number</label>
+                    <input type="tel" id="hospitalAdminMobile" placeholder="Mobile Number">
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="hospitalAdminStatus">
+                        <option value="active">✅ Active</option>
+                        <option value="inactive">❌ Inactive</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-submit" id="hospitalAdminSubmitBtn">💾 Add Hospital Admin</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add/Edit City Button Modal -->
+    <div class="modal" id="cityButtonModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="cityButtonModalTitle">🏙️ Add City Button</h2>
+                <button class="btn-close" onclick="closeModal('cityButton')">&times;</button>
+            </div>
+            <form id="cityButtonForm" autocomplete="off">
+                <input type="hidden" id="cityButtonId">
+                <div class="form-group">
+                    <label>Name *</label>
+                    <input type="text" id="cityButtonName" placeholder="दिल्ली" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label>Link (value) *</label>
+                    <input type="text" id="cityButtonValue" placeholder="delhi" required autocomplete="off">
+                </div>
+                <button type="submit" class="btn-submit" id="cityButtonSubmitBtn">💾 Save</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Blood Admin Modal -->
+    <div class="modal" id="bloodAdminModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="bloodAdminModalTitle">🩸👤 Add Blood Admin</h2>
+                <button class="btn-close" onclick="closeModal('bloodAdmin')">&times;</button>
+            </div>
+            <form id="bloodAdminForm">
+                <input type="hidden" id="bloodAdminId">
+                <div class="form-group">
+                    <label>Admin Name *</label>
+                    <input type="text" id="bloodAdminName" placeholder="Admin का नाम" required>
+                </div>
+                <div class="form-group">
+                    <label>Email (Gmail) *</label>
+                    <input type="email" id="bloodAdminEmail" placeholder="admin@gmail.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Password *</label>
+                    <input type="password" id="bloodAdminPassword" placeholder="Password">
+                </div>
+                <div class="form-group" style="position: relative;">
+                    <label>Hospital *</label>
+                    <input type="text" id="bloodAdminHospital" placeholder="Hospital का नाम टाइप करें..." required autocomplete="off" onkeyup="showBloodAdminHospitalSuggestions(this.value)" onfocus="showBloodAdminHospitalSuggestions(this.value)">
+                    <input type="hidden" id="bloodAdminHospitalId">
+                    <div id="bloodAdminHospitalSuggestions" class="autocomplete-suggestions"></div>
+                </div>
+                <div class="form-group">
+                    <label>Mobile Number</label>
+                    <input type="tel" id="bloodAdminMobile" placeholder="Mobile Number">
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="bloodAdminStatus">
+                        <option value="active">✅ Active</option>
+                        <option value="inactive">❌ Inactive</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-submit" id="bloodAdminSubmitBtn">💾 Add Blood Admin</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Contact Message Reply Modal -->
+    <div class="modal" id="contactMessageModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2>📩 Message Details</h2>
+                <button class="btn-close" onclick="closeContactMessageModal()">&times;</button>
+            </div>
+            <div id="messageDetailContent">
+                <!-- Loaded dynamically -->
+            </div>
+            <div class="reply-section">
+                <h4>✉️ Reply to User</h4>
+                <div id="previousReplySection"></div>
+                <form id="replyForm">
+                    <input type="hidden" id="replyMessageId">
+                    <div class="form-group">
+                        <label>Your Reply *</label>
+                        <textarea id="replyText" rows="5" placeholder="अपना जवाब यहां लिखें..." required style="width:100%;padding:12px;background:#0d1117;border:1px solid #252d38;border-radius:8px;color:#fff;resize:vertical;"></textarea>
+                    </div>
+                    <div style="display:flex;gap:10px;">
+                        <button type="submit" class="btn-submit" style="flex:1;">📧 Send Reply to Gmail</button>
+                        <button type="button" class="btn-add" onclick="closeContactMessageModal()" style="background:#6b7280;">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Item Modal -->
+    <div class="modal" id="footerModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="footerModalTitle">➕ Add Footer Item</h2>
+                <button class="btn-close" onclick="closeFooterModal()">&times;</button>
+            </div>
+            <form id="footerForm">
+                <input type="hidden" id="footerItemId">
+                <input type="hidden" id="footerItemType">
+                <div class="form-group" id="footerIconGroup">
+                    <label>Icon (Emoji)</label>
+                    <input type="text" id="footerIcon" placeholder="📞 या 📧">
+                </div>
+                <div class="form-group">
+                    <label>Title / Platform Name *</label>
+                    <input type="text" id="footerTitle" placeholder="Title" required>
+                </div>
+                <div class="form-group">
+                    <label>URL / Value *</label>
+                    <input type="text" id="footerValue" placeholder="https://... या +91..." required>
+                </div>
+                <button type="submit" class="btn-submit" id="footerSubmitBtn">💾 Save</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Super Admin Modal -->
+    <div class="modal" id="adminModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>👤 Add Super Admin</h2>
+                <button class="btn-close" onclick="closeModal('admin')">&times;</button>
+            </div>
+            <form id="adminForm">
+                <div class="form-group">
+                    <label>Username *</label>
+                    <input type="text" id="adminUsername" placeholder="username" required>
+                </div>
+                <div class="form-group">
+                    <label>Password *</label>
+                    <input type="password" id="adminPassword" placeholder="password" required>
+                </div>
+                <div class="form-group">
+                    <label>Role</label>
+                    <select id="adminRole">
+                        <option value="admin">Admin</option>
+                        <option value="superadmin">Super Admin</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-submit">💾 Add Super Admin</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="api-auth.js"></script>
+    <script src="forgot-password.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>

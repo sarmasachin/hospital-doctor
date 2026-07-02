@@ -1,0 +1,78 @@
+{
+  "publicBaseUrl": "https://livehospital.org",
+  "basic": {
+    "siteTitle": "LiveHospital",
+    "tagline": "Doctor Availability System — आज डॉक्टर उपलब्ध हैं?",
+    "maintenanceMode": false,
+    "maintenanceMessage": "हम साइट अपडेट कर रहे हैं। कृपया कुछ देर बाद फिर आएँ। / We're updating the site. Please check back soon."
+  },
+  "contact": {
+    "phone": "",
+    "whatsapp": "",
+    "supportEmail": "support@livehospital.org",
+    "privacyEmail": "privacy@livehospital.org",
+    "ownerEmail": "sharma.sachinctr@gmail.com",
+    "hours": "सोमवार - शनिवार (9AM - 6PM)"
+  },
+  "social": {
+    "facebook": "",
+    "instagram": "",
+    "youtube": "",
+    "twitter": "",
+    "whatsapp": ""
+  },
+  "integrations": {
+    "googleAnalyticsMeasurementId": "",
+    "googleTagManagerId": "",
+    "notes": "GA4: analytics.google.com → Admin → Data Streams → Measurement ID (G-XXXXXXXX). सेव के बाद पब्लिक पेजों पर ट्रैकिंग चालू होगी।"
+  },
+  "seo": {
+    "pages": {
+      "home": {
+        "title": "LiveHospital - Doctor Availability | आज डॉक्टर उपलब्ध हैं?",
+        "description": "LiveHospital से जानें कि आज आपके डॉक्टर हॉस्पिटल में उपलब्ध हैं या नहीं। नज़दीकी हॉस्पिटल, उपलब्धता और OPD जानकारी।"
+      },
+      "privacy": {
+        "title": "गोपनीयता नीति - LiveHospital",
+        "description": "LiveHospital की गोपनीयता नीति — आपकी व्यक्तिगत जानकारी कैसे एकत्र और सुरक्षित की जाती है।"
+      },
+      "terms": {
+        "title": "नियम और शर्तें - LiveHospital",
+        "description": "LiveHospital वेबसाइट और सेवाओं के उपयोग के नियम और शर्तें।"
+      },
+      "cookies": {
+        "title": "कुकी नीति - LiveHospital",
+        "description": "LiveHospital पर कुकीज़ का उपयोग, प्रकार और आपके विकल्प।"
+      },
+      "contact": {
+        "title": "संपर्क / सहायता - LiveHospital",
+        "description": "LiveHospital सपोर्ट — फोन, ईमेल और संपर्क फॉर्म के माध्यम से हमसे जुड़ें।"
+      }
+    }
+  },
+  "robots": {
+    "allowAll": true,
+    "disallowPaths": [
+      "/admin",
+      "/hospital-admin",
+      "/blood-admin",
+      "/api/"
+    ]
+  },
+  "sitemap": {
+    "extraPaths": []
+  },
+  "images": {
+    "logoAlt": "LiveHospital — हॉस्पिटल व डॉक्टर उपलब्धता सेवा",
+    "guidelines": "सजावटी इमेज: alt खाली या role=presentation। जानकारी वाली इमेज: छोटा, सटीक वर्णन (हिंदी/English) लिखें ताकि सर्च और स्क्रीन रीडर दोनों के लिए सही रहे।"
+  },
+  "backup": {
+    "notes": "उत्पादन में दैनिक mysqldump अनुशंसित। उदाहरण: mysqldump -u user -p hospital_db > backup-$(date +%F).sql",
+    "lastRun": ""
+  },
+  "caching": {
+    "enabled": true,
+    "staticMaxAge": 86400,
+    "notes": "CSS/JS/इमेज फाइलों पर Cache-Control (सेकंड)। HTML हमेशा no-cache रखा जाता है।"
+  }
+}

@@ -1,0 +1,1996 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <title>Hospital Admin Dashboard - LiveHospital</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="forgot-password.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #0a0e13 0%, #1a1a2e 100%);
+            color: #ffffff;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: #000000;
+            padding: 15px 20px;
+            border-bottom: 1px solid #252d38;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-logo .icon {
+            font-size: 1.8rem;
+        }
+
+        .header-logo h1 {
+            font-size: 1.3rem;
+            color: #22c55e;
+        }
+
+        .header-logo span {
+            color: #9ca3af;
+            font-size: 0.85rem;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .hospital-name {
+            background: #151a21;
+            padding: 8px 15px;
+            border-radius: 20px;
+            color: #22c55e;
+            font-size: 0.9rem;
+        }
+
+        .btn-logout {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        /* Main Container */
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        /* Stats */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: #151a21;
+            border: 1px solid #252d38;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-card .icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .stat-card h3 {
+            font-size: 2rem;
+            color: #ffffff;
+        }
+
+        .stat-card p {
+            color: #9ca3af;
+            font-size: 0.9rem;
+        }
+
+        .stat-card.available { border-top: 4px solid #22c55e; }
+        .stat-card.busy { border-top: 4px solid #f97316; }
+        .stat-card.leave { border-top: 4px solid #ef4444; }
+        .stat-card.total { border-top: 4px solid #1e88e5; }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            border-bottom: 1px solid #252d38;
+            padding-bottom: 15px;
+        }
+
+        .tab-btn {
+            background: #151a21;
+            color: #9ca3af;
+            border: 1px solid #252d38;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-btn:hover, .tab-btn.active {
+            background: #22c55e;
+            color: white;
+            border-color: #22c55e;
+        }
+
+        /* Cards */
+        .card {
+            background: #151a21;
+            border: 1px solid #252d38;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #252d38;
+        }
+
+        .card-header h2 {
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-add {
+            background: #22c55e;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-add:hover {
+            background: #16a34a;
+        }
+
+        /* Search and Controls */
+        .search-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .search-box-hospital {
+            flex: 1;
+            max-width: 400px;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-box-hospital input {
+            width: 100%;
+            padding: 12px 16px;
+            background: #0d1117;
+            border: 1px solid #252d38;
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 0.95rem;
+        }
+
+        .search-box-hospital input:focus {
+            outline: none;
+            border-color: #22c55e;
+        }
+
+        .search-box-hospital input::placeholder {
+            color: #6b7280;
+        }
+
+        .doctors-info {
+            color: #9ca3af;
+            font-size: 0.9rem;
+        }
+
+        /* Pagination */
+        .pagination-box {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #252d38;
+        }
+
+        .page-btn-hospital {
+            background: #151a21;
+            color: #9ca3af;
+            border: 1px solid #252d38;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .page-btn-hospital:hover {
+            background: #1e293b;
+            border-color: #22c55e;
+            color: #ffffff;
+        }
+
+        .page-btn-hospital.active {
+            background: #22c55e;
+            color: white;
+            border-color: #22c55e;
+        }
+
+        .page-btn-hospital:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .page-dots-hospital {
+            color: #6b7280;
+            padding: 0 5px;
+        }
+
+        .page-info-hospital {
+            color: #9ca3af;
+            font-size: 0.85rem;
+            margin-left: 15px;
+        }
+
+        /* Doctor Grid */
+        .doctors-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .doctor-card {
+            background: #0d1117;
+            border: 1px solid #252d38;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .doctor-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .doctor-info h3 {
+            font-size: 1.1rem;
+            color: #ffffff;
+            margin-bottom: 5px;
+        }
+
+        .doctor-info p {
+            color: #9ca3af;
+            font-size: 0.85rem;
+        }
+
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-badge.available {
+            background: #22c55e20;
+            color: #22c55e;
+        }
+
+        .status-badge.busy {
+            background: #f9731620;
+            color: #f97316;
+        }
+
+        .status-badge.leave {
+            background: #ef444420;
+            color: #ef4444;
+        }
+
+        .doctor-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+            font-size: 0.85rem;
+            color: #9ca3af;
+        }
+
+        .doctor-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-status {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .btn-status.green { background: #22c55e; color: white; }
+        .btn-status.orange { background: #f97316; color: white; }
+        .btn-status.red { background: #ef4444; color: white; }
+
+        .btn-edit {
+            background: #1e88e5;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .btn-delete {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #d1d5db;
+            font-weight: 500;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            background: #0d1117;
+            border: 1px solid #252d38;
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 1rem;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #22c55e;
+        }
+
+        .specialty-suggestions {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            max-height: 220px;
+            overflow-y: auto;
+            background: #1a1f26;
+            border: 1px solid #252d38;
+            border-radius: 8px;
+            margin-top: 4px;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .specialty-suggestions.show {
+            display: block;
+        }
+        .specialty-suggestions .suggestion-item {
+            padding: 10px 14px;
+            cursor: pointer;
+            color: #e5e7eb;
+            border-bottom: 1px solid #252d38;
+            font-size: 0.95rem;
+        }
+        .specialty-suggestions .suggestion-item:last-child {
+            border-bottom: none;
+        }
+        .specialty-suggestions .suggestion-item:hover,
+        .specialty-suggestions .suggestion-item.selected {
+            background: #22c55e;
+            color: white;
+        }
+        .specialty-suggestions .suggestion-add {
+            padding: 10px 14px;
+            color: #94a3b8;
+            font-size: 0.9rem;
+            border-top: 1px solid #252d38;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background: #22c55e;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-submit:hover {
+            background: #16a34a;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #151a21;
+            border: 1px solid #252d38;
+            border-radius: 16px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #252d38;
+        }
+
+        .modal-header h2 {
+            font-size: 1.2rem;
+        }
+
+        .btn-close {
+            background: none;
+            border: none;
+            color: #9ca3af;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* Alert */
+        .alert {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 10px;
+            z-index: 2000;
+            display: none;
+        }
+
+        .alert.success {
+            background: #22c55e;
+            color: white;
+        }
+
+        .alert.error {
+            background: #ef4444;
+            color: white;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Section Content */
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        /* Login Page */
+        .login-page {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .login-box {
+            background: #151a21;
+            border: 1px solid #252d38;
+            border-radius: 16px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .login-box .icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        .login-box h1 {
+            color: #22c55e;
+            margin-bottom: 10px;
+        }
+
+        .login-box p {
+            color: #9ca3af;
+            margin-bottom: 30px;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .login-error {
+            background: #ef444420;
+            border: 1px solid #ef4444;
+            color: #ef4444;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        /* Form Validation Styles */
+        .form-group {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            text-align: left;
+            margin-bottom: 8px;
+            color: #d1d5db;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            background: #0d1117;
+            border: 2px solid #252d38;
+            border-radius: 10px;
+            color: #ffffff;
+            font-size: 1rem;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #22c55e;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+        }
+
+        .form-group input.error {
+            border-color: #ef4444;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+        }
+
+        .form-group input.success {
+            border-color: #22c55e;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+        }
+
+        .field-error {
+            display: none;
+            color: #ef4444;
+            font-size: 0.8rem;
+            text-align: left;
+            margin-top: 6px;
+            padding-left: 5px;
+        }
+
+        .field-error.show {
+            display: block;
+        }
+
+        .input-icon {
+            position: absolute;
+            right: 14px;
+            top: 42px;
+            font-size: 1.1rem;
+        }
+
+        .input-icon.valid {
+            color: #22c55e;
+        }
+
+        .input-icon.invalid {
+            color: #ef4444;
+        }
+
+        @keyframes shakeError {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+
+        .shake {
+            animation: shakeError 0.4s ease-in-out;
+        }
+
+        /* Forgot Password */
+        .forgot-password {
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .forgot-password a {
+            color: #22c55e;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .forgot-password a:hover {
+            text-decoration: underline;
+        }
+
+        .forgot-form {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #252d38;
+        }
+
+        .forgot-form h3 {
+            color: #22c55e;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .forgot-form p {
+            color: #9ca3af;
+            font-size: 0.85rem;
+            margin-bottom: 15px;
+        }
+
+        .btn-forgot {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+        .btn-forgot:hover {
+            opacity: 0.9;
+        }
+
+        .back-link {
+            display: inline-block;
+            color: #9ca3af;
+            text-decoration: none;
+            font-size: 0.85rem;
+            margin-top: 10px;
+        }
+
+        .back-link:hover {
+            color: #22c55e;
+        }
+
+        .success-message {
+            background: #22c55e20;
+            border: 1px solid #22c55e;
+            color: #22c55e;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        .dashboard {
+            display: none;
+        }
+
+        .dashboard.active {
+            display: flex;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: #0d1117;
+            border-right: 1px solid #252d38;
+            min-height: calc(100vh - 70px);
+            padding: 20px 0;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid #252d38;
+            margin-bottom: 20px;
+        }
+
+        .sidebar-header h3 {
+            color: #22c55e;
+            font-size: 1rem;
+            margin-bottom: 5px;
+        }
+
+        .sidebar-header p {
+            color: #6b7280;
+            font-size: 0.8rem;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+        }
+
+        .sidebar-menu li a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 20px;
+            color: #9ca3af;
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar-menu li a:hover {
+            background: #151a21;
+            color: #ffffff;
+            border-left-color: #22c55e;
+        }
+
+        .sidebar-menu li a.active {
+            background: #22c55e15;
+            color: #22c55e;
+            border-left-color: #22c55e;
+        }
+
+        .sidebar-menu li a .icon {
+            font-size: 1.2rem;
+        }
+
+        .sidebar-menu li a .badge {
+            margin-left: auto;
+            background: #22c55e;
+            color: #000;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        /* Responsive */
+        @media (max-width: 992px) {
+            .sidebar {
+                position: fixed;
+                left: -260px;
+                top: 0;
+                height: 100vh;
+                z-index: 1000;
+                transition: left 0.3s;
+            }
+
+            .sidebar.open {
+                left: 0;
+            }
+
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                z-index: 999;
+            }
+
+            .sidebar-overlay.show {
+                display: block;
+            }
+
+            .menu-toggle {
+                display: flex !important;
+            }
+        }
+
+        .menu-toggle {
+            display: none;
+            background: #22c55e;
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .doctors-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .doctor-actions {
+                flex-wrap: wrap;
+            }
+
+            .stats-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Quick Status Update */
+        .quick-status {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .quick-status button {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Alert -->
+    <div class="alert" id="alertBox"></div>
+
+    <!-- Login Page -->
+    <div class="login-page" id="loginPage">
+        <div class="login-box">
+            <div class="icon">🏥</div>
+            <h1>हॉस्पिटल एडमिन</h1>
+            <p>अपने हॉस्पिटल के डॉक्टर्स को मैनेज करें</p>
+            
+            <div class="login-error" id="loginError">लॉगिन विफल! कृपया सही जानकारी डालें</div>
+            
+            <form id="loginForm" novalidate>
+                <div class="form-group">
+                    <label>Gmail या हॉस्पिटल का नाम *</label>
+                    <input type="text" id="loginUsername" placeholder="Gmail या हॉस्पिटल का नाम डालें" autocomplete="off">
+                    <span class="input-icon" id="usernameIcon"></span>
+                    <div class="field-error" id="usernameError">कृपया Gmail या हॉस्पिटल का नाम डालें</div>
+                </div>
+                <div class="form-group">
+                    <label>पासवर्ड *</label>
+                    <input type="password" id="loginPassword" placeholder="पासवर्ड डालें" autocomplete="off">
+                    <span class="input-icon" id="passwordIcon"></span>
+                    <div class="field-error" id="passwordError">कृपया पासवर्ड डालें</div>
+                </div>
+                <button type="submit" class="btn-login">🔐 लॉगिन करें</button>
+            </form>
+            
+            <div id="forgotPasswordLinkWrap" style="text-align:center;">
+                <button type="button" id="openForgotPassword" class="forgot-password-link">🔑 पासवर्ड भूल गए?</button>
+            </div>
+
+            <div id="forgotPasswordPanel" class="forgot-form-panel">
+                <h3>🔑 पासवर्ड रीसेट</h3>
+                <p>अपना रजिस्टर्ड Gmail / Email डालें। OTP आपके email पर भेजा जाएगा।</p>
+                <div id="forgotStep1">
+                    <div class="form-group">
+                        <label>Email (Gmail) *</label>
+                        <input type="email" id="forgotEmail" placeholder="your@gmail.com" autocomplete="email">
+                    </div>
+                    <button type="button" id="btnSendOtp" class="btn-forgot-action">📧 OTP भेजें</button>
+                </div>
+                <div id="forgotStep2" style="display:none;">
+                    <div class="form-group">
+                        <label>OTP (6 अंक) *</label>
+                        <input type="text" id="forgotOtp" placeholder="123456" maxlength="6" inputmode="numeric" autocomplete="one-time-code">
+                    </div>
+                    <div class="form-group">
+                        <label>नया पासवर्ड *</label>
+                        <input type="password" id="forgotNewPassword" placeholder="कम से कम 6 अक्षर" autocomplete="new-password">
+                    </div>
+                    <div class="form-group">
+                        <label>पासवर्ड दोबारा *</label>
+                        <input type="password" id="forgotConfirmPassword" placeholder="पासवर्ड confirm करें" autocomplete="new-password">
+                    </div>
+                    <button type="button" id="btnResetPassword" class="btn-forgot-action">🔐 नया पासवर्ड सेट करें</button>
+                </div>
+                <button type="button" id="backToLogin" class="forgot-back-link back-green">← लॉगिन पर वापस जाएँ</button>
+                <div id="forgotMessage" class="forgot-message"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="dashboard" id="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h3>🏥 Hospital Admin</h3>
+                <p id="sidebarHospitalName">Hospital Name</p>
+            </div>
+            <ul class="sidebar-menu">
+                <li><a href="#" class="active" onclick="showSection('dashboard')"><span class="icon">📊</span> Dashboard</a></li>
+                <li><a href="#" onclick="showSection('doctors')"><span class="icon">👨‍⚕️</span> Doctors <span class="badge" id="doctorsBadge">0</span></a></li>
+                <li><a href="#" onclick="showSection('add')"><span class="icon">➕</span> Add Doctor</a></li>
+                <li><a href="#" onclick="showSection('bulk')"><span class="icon">📋</span> Bulk Update</a></li>
+                <li><a href="#" onclick="showSection('hospital-card-label')"><span class="icon">🏷️</span> कार्ड लेबल</a></li>
+                <li><a href="index.html"><span class="icon">🌐</span> View Website</a></li>
+                <li><a href="#" onclick="logout()" style="color:#ef4444;"><span class="icon">🚪</span> Logout</a></li>
+            </ul>
+        </aside>
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()" aria-hidden="true"></div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-logo">
+                    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+                    <span class="icon">🏥</span>
+                    <div>
+                        <h1>Hospital Admin</h1>
+                        <span>Doctor Management System</span>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <span class="hospital-name" id="hospitalNameDisplay">Hospital Name</span>
+                    <button class="btn-logout" onclick="logout()">Logout</button>
+                </div>
+            </header>
+
+            <!-- Main Container -->
+            <div class="main-container">
+            <!-- Dashboard Section -->
+            <div class="content-section active" id="section-dashboard">
+                <h2 style="color:#fff;margin-bottom:20px;">📊 Dashboard Overview</h2>
+                <!-- Stats -->
+                <div class="stats-row">
+                    <div class="stat-card total">
+                        <div class="icon">👨‍⚕️</div>
+                        <h3 id="statTotal">0</h3>
+                        <p>Total Doctors</p>
+                    </div>
+                    <div class="stat-card available">
+                        <div class="icon">✅</div>
+                        <h3 id="statAvailable">0</h3>
+                        <p>उपलब्ध</p>
+                    </div>
+                    <div class="stat-card busy">
+                        <div class="icon">⏳</div>
+                        <h3 id="statBusy">0</h3>
+                        <p>व्यस्त</p>
+                    </div>
+                    <div class="stat-card leave">
+                        <div class="icon">🏠</div>
+                        <h3 id="statLeave">0</h3>
+                        <p>छुट्टी पर</p>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="card" style="margin-top:25px;">
+                    <div class="card-header">
+                        <h2>⚡ Quick Actions</h2>
+                    </div>
+                    <div style="display:flex;gap:15px;flex-wrap:wrap;">
+                        <button class="btn-add" onclick="showSection('add')">➕ नया डॉक्टर जोड़ें</button>
+                        <button class="btn-add" onclick="showSection('doctors')" style="background:#1e88e5;">👨‍⚕️ डॉक्टर्स देखें</button>
+                        <button class="btn-add" onclick="showSection('bulk')" style="background:#f97316;">📋 Bulk Update</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Doctors Section -->
+            <div class="content-section" id="section-doctors">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>👨‍⚕️ सभी डॉक्टर्स</h2>
+                        <button class="btn-add" onclick="showTab('add')">➕ डॉक्टर जोड़ें</button>
+                    </div>
+                    <div class="search-controls">
+                        <div class="search-box-hospital">
+                            <input type="text" id="searchDoctorsInput" placeholder="🔍 डॉक्टर खोजें (नाम, विशेषज्ञता)..." onkeyup="searchDoctorsHospital()">
+                        </div>
+                        <div class="doctors-info" id="doctorsInfoText">Total: 0 डॉक्टर्स</div>
+                    </div>
+                    <div class="doctors-grid" id="doctorsGrid">
+                        <!-- Loaded dynamically -->
+                    </div>
+                    <div class="pagination-box" id="doctorsPaginationBox">
+                        <!-- Pagination loaded dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hospital card label (this hospital only – top line on public card) -->
+            <div class="content-section" id="section-hospital-card-label">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>🏷️ हॉस्पिटल कार्ड लेबल</h2>
+                        <span style="color:#9ca3af;">पूरी साइट की ब्रांडिंग नहीं — मुख्य वेबसाइट पर सिर्फ आपके अस्पताल के कार्ड के ऊपर एक छोटी लाइन दिखेगी</span>
+                    </div>
+                    <div style="padding:20px;">
+                        <div class="form-group" style="max-width:500px;">
+                            <label>कार्ड पर लेबल (वेबसाइट पर आपके हॉस्पिटल कार्ड के ऊपर बीच में)</label>
+                            <input type="text" id="hospitalCardLabelInputHospital" placeholder="उदा. Ayushman · NABH मान्यता" style="width:100%;padding:12px;background:#0d1117;border:1px solid #252d38;border-radius:8px;color:#fff;font-size:1rem;">
+                        </div>
+                        <button class="btn-add" onclick="saveHospitalCardLabelHospital()" style="margin-top:15px;">💾 लेबल सेव करें</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add Doctor Section -->
+            <div class="content-section" id="section-add">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>➕ Add New Doctor</h2>
+                    </div>
+                    <form id="doctorForm">
+                        <div class="form-group">
+                            <label>Doctor Name *</label>
+                            <input type="text" id="doctorName" placeholder="डॉ. राजेश शर्मा" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group" style="position:relative;">
+                                <label>Specialty *</label>
+                                <input type="text" id="doctorSpecialty" placeholder="खोजें या नया लिखें..." required autocomplete="off">
+                                <div id="specialtySuggestions" class="specialty-suggestions"></div>
+                            </div>
+                            <div class="form-group">
+                                <label>Experience</label>
+                                <input type="text" id="doctorExperience" placeholder="10 वर्ष">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Status *</label>
+                                <select id="doctorStatus" required>
+                                    <option value="available">✅ उपलब्ध (Available)</option>
+                                    <option value="busy">⏳ व्यस्त (Busy)</option>
+                                    <option value="leave">🏠 छुट्टी पर (On Leave)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Fees</label>
+                                <input type="text" id="doctorFees" placeholder="₹500">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Timing</label>
+                                <input type="text" id="doctorTiming" placeholder="9:00 AM - 5:00 PM">
+                            </div>
+                            <div class="form-group">
+                                <label>OPD Days</label>
+                                <input type="text" id="doctorOPDDays" placeholder="Mon, Tue, Wed, Thu, Fri">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Qualification (Tags)</label>
+                                <input type="text" id="doctorQualification" placeholder="MBBS, MD, Senior Resident">
+                            </div>
+                            <div class="form-group">
+                                <label>Sub-Specialization</label>
+                                <input type="text" id="doctorSubSpecialization" placeholder="हार्ट फेलियर स्पेशलिस्ट / हृदय रोग विशेषज्ञ">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Room No.</label>
+                                <input type="text" id="doctorRoom" placeholder="203">
+                            </div>
+                            <div class="form-group">
+                                <label>Floor</label>
+                                <input type="text" id="doctorFloor" placeholder="दूसरी / 2">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Block</label>
+                                <input type="text" id="doctorBlock" placeholder="B">
+                            </div>
+                            <div class="form-group">
+                                <!-- Empty for alignment -->
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-submit">💾 Save Doctor</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Bulk Update Section -->
+            <div class="content-section" id="section-bulk">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>📋 सभी डॉक्टर्स का स्टेटस एक साथ अपडेट करें</h2>
+                    </div>
+                    <p style="color: #9ca3af; margin-bottom: 20px;">
+                        नीचे से डॉक्टर्स चुनें और उनका स्टेटस एक साथ बदलें
+                    </p>
+                    <div class="form-group">
+                        <label>डॉक्टर्स चुनें</label>
+                        <div id="bulkDoctorsList" style="max-height: 300px; overflow-y: auto; background: #0d1117; padding: 15px; border-radius: 8px;">
+                            <!-- Checkboxes loaded dynamically -->
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>नया स्टेटस चुनें</label>
+                        <select id="bulkStatus">
+                            <option value="available">✅ उपलब्ध</option>
+                            <option value="busy">⏳ व्यस्त</option>
+                            <option value="leave">🏠 छुट्टी पर</option>
+                        </select>
+                    </div>
+                    <button class="btn-submit" onclick="bulkUpdateStatus()">🔄 चुने हुए डॉक्टर्स अपडेट करें</button>
+                </div>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <!-- Edit Doctor Modal -->
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>✏️ Edit Doctor</h2>
+                <button class="btn-close" onclick="closeEditModal()">&times;</button>
+            </div>
+            <form id="editForm">
+                <input type="hidden" id="editDoctorId">
+                <div class="form-group">
+                    <label>Doctor Name</label>
+                    <input type="text" id="editName" required>
+                </div>
+                <div class="form-group">
+                    <label>Specialty</label>
+                    <input type="text" id="editSpecialty" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Experience</label>
+                        <input type="text" id="editExperience" placeholder="10 वर्ष">
+                    </div>
+                    <div class="form-group">
+                        <label>Qualification (Tags)</label>
+                        <input type="text" id="editQualification" placeholder="MBBS, MD, Senior Resident">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Sub-Specialization</label>
+                    <input type="text" id="editSubSpecialization" placeholder="हार्ट फेलियर स्पेशलिस्ट">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select id="editStatus">
+                            <option value="available">उपलब्ध</option>
+                            <option value="busy">व्यस्त</option>
+                            <option value="leave">छुट्टी पर</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Fees</label>
+                        <input type="text" id="editFees">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Timing</label>
+                    <input type="text" id="editTiming">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Room No.</label>
+                        <input type="text" id="editRoom" placeholder="203">
+                    </div>
+                    <div class="form-group">
+                        <label>Floor</label>
+                        <input type="text" id="editFloor" placeholder="दूसरी / 2">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Block</label>
+                        <input type="text" id="editBlock" placeholder="B">
+                    </div>
+                    <div class="form-group"></div>
+                </div>
+                <button type="submit" class="btn-submit">💾 Update Doctor</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="api-auth.js"></script>
+    <script src="forgot-password.js"></script>
+    <script>
+        const API_URL = typeof getApiBase === 'function' ? getApiBase() : 'http://localhost:5006/api';
+        let currentHospital = null;
+        let doctors = [];
+        let filteredDoctors = [];
+        let currentDoctorPage = 1;
+        const DOCTORS_PER_PAGE = 20;
+
+        // All hospitals list
+        let allHospitals = [];
+
+        // Load hospitals for login
+        async function loadHospitalsForLogin() {
+            try {
+                const response = await fetch(`${API_URL}/hospitals`);
+                allHospitals = await response.json();
+            } catch (error) {
+                console.error('Error loading hospitals:', error);
+            }
+        }
+
+        // Find hospital by name or email
+        function findHospital(input) {
+            // Check if input is email
+            const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i;
+            if (emailRegex.test(input)) {
+                // For demo, match any hospital (in real app, would check registered email)
+                return allHospitals.length > 0 ? allHospitals[0] : null;
+            }
+            // Search by hospital name
+            return allHospitals.find(h => 
+                h.name.toLowerCase().includes(input.toLowerCase()) ||
+                input.toLowerCase().includes(h.name.toLowerCase())
+            );
+        }
+
+        function showFieldError(inputId, errorId, iconId, message) {
+            const input = document.getElementById(inputId);
+            const error = document.getElementById(errorId);
+            const icon = document.getElementById(iconId);
+            
+            input.classList.add('error');
+            input.classList.remove('success');
+            error.textContent = message;
+            error.classList.add('show');
+            icon.textContent = '❌';
+            icon.className = 'input-icon invalid';
+            
+            input.classList.add('shake');
+            setTimeout(() => input.classList.remove('shake'), 400);
+        }
+
+        function showFieldSuccess(inputId, errorId, iconId) {
+            const input = document.getElementById(inputId);
+            const error = document.getElementById(errorId);
+            const icon = document.getElementById(iconId);
+            
+            input.classList.remove('error');
+            input.classList.add('success');
+            error.classList.remove('show');
+            icon.textContent = '✅';
+            icon.className = 'input-icon valid';
+        }
+
+        function clearFieldValidation(inputId, errorId, iconId) {
+            const input = document.getElementById(inputId);
+            const error = document.getElementById(errorId);
+            const icon = document.getElementById(iconId);
+            
+            input.classList.remove('error', 'success');
+            error.classList.remove('show');
+            icon.textContent = '';
+            icon.className = 'input-icon';
+        }
+
+        // Real-time validation
+        document.getElementById('loginUsername').addEventListener('input', function() {
+            const value = this.value.trim();
+            if (value.length === 0) {
+                clearFieldValidation('loginUsername', 'usernameError', 'usernameIcon');
+                return;
+            }
+            if (value.length >= 3) {
+                const hospital = findHospital(value);
+                if (hospital || value.includes('@gmail.com')) {
+                    showFieldSuccess('loginUsername', 'usernameError', 'usernameIcon');
+                } else {
+                    showFieldError('loginUsername', 'usernameError', 'usernameIcon', 'हॉस्पिटल नहीं मिला या सही Gmail डालें');
+                }
+            }
+        });
+
+        document.getElementById('loginPassword').addEventListener('input', function() {
+            const value = this.value;
+            if (value.length === 0) {
+                clearFieldValidation('loginPassword', 'passwordError', 'passwordIcon');
+                return;
+            }
+            if (value.length >= 6) {
+                showFieldSuccess('loginPassword', 'passwordError', 'passwordIcon');
+            }
+        });
+
+        // Login
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            
+            let hasError = false;
+            
+            if (!username || username.length < 3) {
+                showFieldError('loginUsername', 'usernameError', 'usernameIcon', 'कृपया Gmail या हॉस्पिटल का नाम डालें');
+                hasError = true;
+            }
+            
+            if (!password || password.length < 6) {
+                showFieldError('loginPassword', 'passwordError', 'passwordIcon', 'पासवर्ड कम से कम 6 अक्षर का होना चाहिए');
+                hasError = true;
+            }
+            
+            if (hasError) {
+                document.getElementById('loginError').style.display = 'block';
+                document.getElementById('loginError').textContent = 'कृपया सभी फ़ील्ड सही तरीके से भरें';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/admin/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await response.json();
+
+                if (!data.success) {
+                    document.getElementById('loginError').style.display = 'block';
+                    document.getElementById('loginError').textContent = data.error || 'गलत लॉगिन!';
+                    return;
+                }
+
+                saveAuthSession(data.token, data.admin);
+
+                let hospital = null;
+                if (data.admin.role === 'superadmin') {
+                    hospital = findHospital(username);
+                } else if ((data.admin.role === 'hospital_admin' || data.admin.role === 'admin') && data.admin.hospital_id) {
+                    hospital = allHospitals.find(h => h.id === data.admin.hospital_id);
+                } else {
+                    clearAuthSession();
+                    document.getElementById('loginError').style.display = 'block';
+                    document.getElementById('loginError').textContent = 'यह लॉगिन Hospital Admin के लिए नहीं है!';
+                    return;
+                }
+
+                if (!hospital) {
+                    clearAuthSession();
+                    document.getElementById('loginError').style.display = 'block';
+                    document.getElementById('loginError').textContent = 'हॉस्पिटल नहीं मिला या एक्सेस नहीं है!';
+                    return;
+                }
+
+                document.getElementById('loginError').style.display = 'none';
+                currentHospital = { id: hospital.id, name: hospital.name };
+                document.getElementById('loginPage').style.display = 'none';
+                document.getElementById('dashboard').classList.add('active');
+                document.getElementById('hospitalNameDisplay').textContent = hospital.name;
+                document.getElementById('sidebarHospitalName').textContent = hospital.name;
+                loadDoctors();
+            } catch (error) {
+                document.getElementById('loginError').style.display = 'block';
+                document.getElementById('loginError').textContent = 'सर्वर कनेक्शन विफल!';
+            }
+        });
+
+        // Logout
+        function logout() {
+            currentHospital = null;
+            clearAuthSession();
+            document.getElementById('dashboard').classList.remove('active');
+            document.getElementById('loginPage').style.display = 'flex';
+            document.getElementById('loginPassword').value = '';
+        }
+
+        // Load doctors
+        async function loadDoctors() {
+            try {
+                const response = await fetch(`${API_URL}/hospitals/${currentHospital.id}/doctors`);
+                doctors = await response.json();
+                renderDoctors();
+                updateStats();
+                renderBulkList();
+            } catch (error) {
+                console.error('Error loading doctors:', error);
+            }
+        }
+
+        // Render doctors
+        function renderDoctors() {
+            // Initialize filtered doctors
+            filteredDoctors = [...doctors];
+            currentDoctorPage = 1;
+            renderDoctorsWithPagination();
+        }
+
+        // Search doctors
+        function searchDoctorsHospital() {
+            const query = document.getElementById('searchDoctorsInput').value.toLowerCase().trim();
+            
+            if (query === '') {
+                filteredDoctors = [...doctors];
+            } else {
+                filteredDoctors = doctors.filter(d => 
+                    d.name.toLowerCase().includes(query) ||
+                    d.specialty.toLowerCase().includes(query) ||
+                    (d.timing && d.timing.toLowerCase().includes(query)) ||
+                    (d.fees && d.fees.toLowerCase().includes(query))
+                );
+            }
+            
+            currentDoctorPage = 1;
+            renderDoctorsWithPagination();
+        }
+
+        // Render doctors with pagination
+        function renderDoctorsWithPagination() {
+            const grid = document.getElementById('doctorsGrid');
+            const paginationBox = document.getElementById('doctorsPaginationBox');
+            const infoText = document.getElementById('doctorsInfoText');
+            
+            // Update info
+            infoText.textContent = `Total: ${filteredDoctors.length} डॉक्टर्स`;
+            
+            if (filteredDoctors.length === 0) {
+                grid.innerHTML = '<p style="color: #9ca3af; text-align: center; padding: 40px;">कोई डॉक्टर नहीं मिला। डॉक्टर जोड़ें पर क्लिक करें।</p>';
+                paginationBox.innerHTML = '';
+                return;
+            }
+
+            // Paginate data
+            const totalPages = Math.ceil(filteredDoctors.length / DOCTORS_PER_PAGE);
+            const start = (currentDoctorPage - 1) * DOCTORS_PER_PAGE;
+            const end = start + DOCTORS_PER_PAGE;
+            const paginatedDoctors = filteredDoctors.slice(start, end);
+
+            grid.innerHTML = paginatedDoctors.map(d => `
+                <div class="doctor-card">
+                    <div class="doctor-card-header">
+                        <div class="doctor-info">
+                            <h3>${d.name}</h3>
+                            <p>${d.specialty}</p>
+                        </div>
+                        <span class="status-badge ${d.status}">${getStatusLabel(d.status)}</span>
+                    </div>
+                    <div class="doctor-details">
+                        <span>🕐 ${d.timing || 'N/A'}</span>
+                        <span>💰 ${d.fees || 'N/A'}</span>
+                        <span>📅 ${d.experience || 'N/A'}</span>
+                        <span>🚪 ${d.room_no || 'N/A'}</span>
+                        <span>🏢 ${d.floor || 'N/A'}</span>
+                    </div>
+                    <div class="quick-status">
+                        <button class="btn-status green" onclick="quickStatus(${d.id}, 'available')">✅ उपलब्ध</button>
+                        <button class="btn-status orange" onclick="quickStatus(${d.id}, 'busy')">⏳ व्यस्त</button>
+                        <button class="btn-status red" onclick="quickStatus(${d.id}, 'leave')">🏠 छुट्टी</button>
+                    </div>
+                    <div class="doctor-actions" style="margin-top: 10px;">
+                        <button class="btn-edit" onclick="editDoctor(${d.id})">✏️ संपादन</button>
+                        <button class="btn-delete" onclick="deleteDoctor(${d.id})">🗑️ हटाएं</button>
+                    </div>
+                </div>
+            `).join('');
+
+            // Render pagination
+            renderDoctorPagination(totalPages);
+        }
+
+        // Render pagination
+        function renderDoctorPagination(totalPages) {
+            const paginationBox = document.getElementById('doctorsPaginationBox');
+            
+            if (totalPages <= 1) {
+                paginationBox.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+            
+            // Prev button
+            html += `<button class="page-btn-hospital" onclick="changeDoctorPage(${currentDoctorPage - 1})" ${currentDoctorPage === 1 ? 'disabled' : ''}>← पिछला</button>`;
+            
+            // Page numbers
+            const maxVisible = 5;
+            let startPage = Math.max(1, currentDoctorPage - Math.floor(maxVisible / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+            
+            if (endPage - startPage < maxVisible - 1) {
+                startPage = Math.max(1, endPage - maxVisible + 1);
+            }
+            
+            if (startPage > 1) {
+                html += `<button class="page-btn-hospital" onclick="changeDoctorPage(1)">1</button>`;
+                if (startPage > 2) html += '<span class="page-dots-hospital">...</span>';
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<button class="page-btn-hospital ${i === currentDoctorPage ? 'active' : ''}" onclick="changeDoctorPage(${i})">${i}</button>`;
+            }
+            
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) html += '<span class="page-dots-hospital">...</span>';
+                html += `<button class="page-btn-hospital" onclick="changeDoctorPage(${totalPages})">${totalPages}</button>`;
+            }
+            
+            // Next button
+            html += `<button class="page-btn-hospital" onclick="changeDoctorPage(${currentDoctorPage + 1})" ${currentDoctorPage === totalPages ? 'disabled' : ''}>अगला →</button>`;
+            
+            // Page info
+            html += `<span class="page-info-hospital">पेज ${currentDoctorPage} / ${totalPages}</span>`;
+            
+            paginationBox.innerHTML = html;
+        }
+
+        // Change doctor page
+        function changeDoctorPage(page) {
+            const totalPages = Math.ceil(filteredDoctors.length / DOCTORS_PER_PAGE);
+            if (page < 1 || page > totalPages) return;
+            
+            currentDoctorPage = page;
+            renderDoctorsWithPagination();
+            
+            // Scroll to top of grid
+            document.getElementById('doctorsGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // Update stats
+        function updateStats() {
+            const available = doctors.filter(d => d.status === 'available').length;
+            const busy = doctors.filter(d => d.status === 'busy').length;
+            const leave = doctors.filter(d => d.status === 'leave').length;
+            
+            document.getElementById('statTotal').textContent = doctors.length;
+            document.getElementById('statAvailable').textContent = available;
+            document.getElementById('statBusy').textContent = busy;
+            document.getElementById('statLeave').textContent = leave;
+            
+            // Update sidebar badge
+            document.getElementById('doctorsBadge').textContent = doctors.length;
+        }
+
+        // Get status label
+        function getStatusLabel(status) {
+            const labels = { 'available': 'उपलब्ध', 'busy': 'व्यस्त', 'leave': 'छुट्टी पर' };
+            return labels[status] || status;
+        }
+
+        // Toggle sidebar for mobile
+        function closeSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (sidebar) sidebar.classList.remove('open');
+            if (overlay) overlay.classList.remove('show');
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (!sidebar) return;
+            const willOpen = !sidebar.classList.contains('open');
+            sidebar.classList.toggle('open', willOpen);
+            if (overlay) overlay.classList.toggle('show', willOpen);
+        }
+
+        // Show section
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+            
+            // Show selected section
+            document.getElementById(`section-${sectionId}`).classList.add('active');
+            
+            // Load data when switching to hospital card label section
+            if (sectionId === 'hospital-card-label') loadHospitalCardLabelHospital();
+            
+            // Update sidebar menu
+            document.querySelectorAll('.sidebar-menu a').forEach(a => a.classList.remove('active'));
+            const activeLink = document.querySelector(`.sidebar-menu a[onclick="showSection('${sectionId}')"]`);
+            if (activeLink) activeLink.classList.add('active');
+            
+            closeSidebar();
+        }
+        
+        // Hospital card label (card_branding – सिर्फ इसी hospital के public card पर)
+        function loadHospitalCardLabelHospital() {
+            if (!currentHospital) return;
+            fetch(`${API_URL}/hospitals/${currentHospital.id}`)
+                .then(r => r.json())
+                .then(h => {
+                    const inp = document.getElementById('hospitalCardLabelInputHospital');
+                    if (inp) inp.value = (h && h.card_branding) ? h.card_branding : '';
+                })
+                .catch(() => {});
+        }
+        async function saveHospitalCardLabelHospital() {
+            if (!currentHospital) {
+                alert('पहले हॉस्पिटल से लॉगिन करें');
+                return;
+            }
+            const inp = document.getElementById('hospitalCardLabelInputHospital');
+            const val = (inp && inp.value) ? inp.value.trim() : '';
+            try {
+                const res = await authFetch(`${API_URL}/hospitals/${currentHospital.id}/branding`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ card_branding: val || null })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    alert(data.error || 'लेबल सेव नहीं हो सका');
+                    return;
+                }
+                alert(val ? 'लेबल सेव हो गया। आपके अस्पताल के कार्ड पर दिखेगा: ' + val : 'कार्ड लेबल हटा दिया गया');
+            } catch (e) {
+                alert('Network error. Is server running?');
+            }
+        }
+        
+        // Legacy support for showTab
+        function showTab(tabId) {
+            showSection(tabId);
+        }
+
+        // Specialty list (search + add new)
+        const DEFAULT_SPECIALTIES = [
+            'कार्डियोलॉजी', 'न्यूरोलॉजी', 'ऑर्थोपेडिक', 'पीडियाट्रिक्स', 'गायनेकोलॉजी',
+            'डर्मेटोलॉजी', 'जनरल मेडिसिन', 'ENT', 'ऑप्थल्मोलॉजी', 'सर्जरी',
+            'हड्डी रोग', 'बाल रोग', 'स्त्री रोग', 'त्वचा रोग', 'आंख रोग', 'हृदय रोग'
+        ];
+        let specialtySuggestionsTimeout = null;
+
+        function showSpecialtySuggestions(query) {
+            const input = document.getElementById('doctorSpecialty');
+            const box = document.getElementById('specialtySuggestions');
+            if (!input || !box) return;
+            const q = (query || '').trim().toLowerCase();
+            const filtered = q
+                ? DEFAULT_SPECIALTIES.filter(s => s.toLowerCase().includes(q))
+                : DEFAULT_SPECIALTIES.slice();
+            let html = '';
+            filtered.forEach(s => {
+                html += `<div class="suggestion-item" data-value="${s.replace(/"/g, '&quot;')}">${s}</div>`;
+            });
+            if (q && !DEFAULT_SPECIALTIES.some(s => s.toLowerCase() === q)) {
+                html += `<div class="suggestion-add" id="specialtyAddNew">➕ Use "${(input.value || '').trim().substring(0, 50)}" as new specialty</div>`;
+            }
+            box.innerHTML = html || '<div class="suggestion-item" style="color:#94a3b8;cursor:default;">No match — type to add new</div>';
+            box.classList.add('show');
+            box.querySelectorAll('.suggestion-item[data-value]').forEach(el => {
+                el.addEventListener('click', function() {
+                    const val = this.getAttribute('data-value');
+                    if (val) {
+                        input.value = val;
+                        hideSpecialtySuggestions();
+                    }
+                });
+            });
+            const addNewRow = document.getElementById('specialtyAddNew');
+            if (addNewRow) {
+                addNewRow.style.cursor = 'pointer';
+                addNewRow.addEventListener('click', function() { hideSpecialtySuggestions(); });
+            }
+        }
+
+        function hideSpecialtySuggestions() {
+            const box = document.getElementById('specialtySuggestions');
+            if (box) box.classList.remove('show');
+        }
+
+        (function initSpecialtySearch() {
+            const input = document.getElementById('doctorSpecialty');
+            const box = document.getElementById('specialtySuggestions');
+            if (!input || !box) return;
+            input.addEventListener('focus', function() { showSpecialtySuggestions(this.value); });
+            input.addEventListener('input', function() { showSpecialtySuggestions(this.value); });
+            input.addEventListener('blur', function() {
+                specialtySuggestionsTimeout = setTimeout(hideSpecialtySuggestions, 200);
+            });
+            box.addEventListener('mousedown', function(e) { e.preventDefault(); });
+            document.addEventListener('click', function(e) {
+                if (!input.contains(e.target) && !box.contains(e.target)) hideSpecialtySuggestions();
+            });
+        })();
+
+        // Add doctor
+        document.getElementById('doctorForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const data = {
+                name: document.getElementById('doctorName').value,
+                specialty: document.getElementById('doctorSpecialty').value.trim(),
+                experience: document.getElementById('doctorExperience').value,
+                status: document.getElementById('doctorStatus').value,
+                fees: document.getElementById('doctorFees').value,
+                timing: document.getElementById('doctorTiming').value,
+                opd_days: document.getElementById('doctorOPDDays').value,
+                qualification: document.getElementById('doctorQualification').value.trim() || null,
+                sub_specialization: document.getElementById('doctorSubSpecialization').value.trim() || null,
+                room_no: document.getElementById('doctorRoom').value.trim() || null,
+                floor: document.getElementById('doctorFloor').value.trim() || null,
+                block: document.getElementById('doctorBlock').value.trim() || null,
+                hospital_id: currentHospital.id
+            };
+
+            try {
+                const response = await authFetch(`${API_URL}/doctors`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    showAlert('Doctor added successfully!', 'success');
+                    this.reset();
+                    loadDoctors();
+                    showTab('doctors');
+                } else {
+                    showAlert('Failed to add doctor', 'error');
+                }
+            } catch (error) {
+                showAlert('Server error', 'error');
+            }
+        });
+
+        // Quick status update
+        async function quickStatus(doctorId, status) {
+            try {
+                const response = await authFetch(`${API_URL}/doctors/${doctorId}/status`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status })
+                });
+
+                if (response.ok) {
+                    showAlert('Status updated!', 'success');
+                    loadDoctors();
+                }
+            } catch (error) {
+                showAlert('Update failed', 'error');
+            }
+        }
+
+        // Edit doctor
+        function editDoctor(id) {
+            const doctor = doctors.find(d => d.id === id);
+            if (!doctor) return;
+
+            document.getElementById('editDoctorId').value = id;
+            document.getElementById('editName').value = doctor.name;
+            document.getElementById('editSpecialty').value = doctor.specialty;
+            document.getElementById('editExperience').value = doctor.experience || '';
+            document.getElementById('editQualification').value = doctor.qualification || '';
+            document.getElementById('editSubSpecialization').value = doctor.sub_specialization || '';
+            document.getElementById('editStatus').value = doctor.status;
+            document.getElementById('editFees').value = doctor.fees || '';
+            document.getElementById('editTiming').value = doctor.timing || '';
+            document.getElementById('editRoom').value = doctor.room_no || '';
+            document.getElementById('editFloor').value = doctor.floor || '';
+            document.getElementById('editBlock').value = doctor.block || '';
+
+            document.getElementById('editModal').classList.add('active');
+        }
+
+        // Close edit modal
+        function closeEditModal() {
+            document.getElementById('editModal').classList.remove('active');
+        }
+
+        // Update doctor
+        document.getElementById('editForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const id = document.getElementById('editDoctorId').value;
+            const data = {
+                name: document.getElementById('editName').value,
+                specialty: document.getElementById('editSpecialty').value,
+                experience: document.getElementById('editExperience').value || null,
+                qualification: document.getElementById('editQualification').value.trim() || null,
+                sub_specialization: document.getElementById('editSubSpecialization').value.trim() || null,
+                status: document.getElementById('editStatus').value,
+                fees: document.getElementById('editFees').value,
+                timing: document.getElementById('editTiming').value,
+                room_no: document.getElementById('editRoom').value.trim() || null,
+                floor: document.getElementById('editFloor').value.trim() || null,
+                block: document.getElementById('editBlock').value.trim() || null,
+                hospital_id: currentHospital.id
+            };
+
+            try {
+                const response = await authFetch(`${API_URL}/doctors/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    showAlert('Doctor updated!', 'success');
+                    closeEditModal();
+                    loadDoctors();
+                }
+            } catch (error) {
+                showAlert('Update failed', 'error');
+            }
+        });
+
+        // Delete doctor
+        async function deleteDoctor(id) {
+            if (!confirm('Are you sure you want to delete this doctor?')) return;
+
+            try {
+                const response = await authFetch(`${API_URL}/doctors/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    showAlert('Doctor deleted!', 'success');
+                    loadDoctors();
+                }
+            } catch (error) {
+                showAlert('Delete failed', 'error');
+            }
+        }
+
+        // Render bulk list
+        function renderBulkList() {
+            const container = document.getElementById('bulkDoctorsList');
+            container.innerHTML = doctors.map(d => `
+                <label style="display: block; padding: 8px; cursor: pointer;">
+                    <input type="checkbox" value="${d.id}" style="margin-right: 10px;">
+                    ${d.name} - ${d.specialty} (${getStatusLabel(d.status)})
+                </label>
+            `).join('');
+        }
+
+        // Bulk update status
+        async function bulkUpdateStatus() {
+            const checkboxes = document.querySelectorAll('#bulkDoctorsList input:checked');
+            const doctorIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+            const status = document.getElementById('bulkStatus').value;
+
+            if (doctorIds.length === 0) {
+                showAlert('कृपया कम से कम एक डॉक्टर चुनें', 'error');
+                return;
+            }
+
+            try {
+                const response = await authFetch(`${API_URL}/doctors/bulk-status`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ doctor_ids: doctorIds, status })
+                });
+
+                if (response.ok) {
+                    showAlert(`${doctorIds.length} डॉक्टर्स का स्टेटस अपडेट हो गया!`, 'success');
+                    loadDoctors();
+                }
+            } catch (error) {
+                showAlert('अपडेट करने में समस्या हुई', 'error');
+            }
+        }
+
+        // Show alert
+        function showAlert(message, type) {
+            const alert = document.getElementById('alertBox');
+            alert.textContent = message;
+            alert.className = `alert ${type} show`;
+            setTimeout(() => alert.classList.remove('show'), 3000);
+        }
+
+        // Initialize
+        loadHospitalsForLogin();
+    </script>
+</body>
+</html>

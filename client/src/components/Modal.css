@@ -1,0 +1,164 @@
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 20px;
+    padding: 30px;
+    max-width: 500px;
+    width: 90%;
+    position: relative;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.close-modal {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #64748b;
+}
+
+.close-modal:hover {
+    color: #1e293b;
+}
+
+.modal-content h2 {
+    text-align: center;
+    margin-bottom: 5px;
+    color: #1e293b;
+}
+
+.modal-location {
+    text-align: center;
+    color: #64748b;
+    margin-bottom: 10px;
+}
+
+.modal-location i {
+    margin-right: 5px;
+}
+
+.modal-status-label {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.status-badge {
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.status-badge.status-available {
+    background: #d1fae5;
+    color: #059669;
+}
+
+.status-badge.status-busy {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.status-badge.status-leave {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.doctors-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.doctor-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px;
+    background: #f8fafc;
+    border-radius: 12px;
+    margin-bottom: 10px;
+}
+
+.doctor-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.doctor-avatar {
+    width: 50px;
+    height: 50px;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1.2rem;
+}
+
+.doctor-details h5 {
+    font-size: 1rem;
+    margin-bottom: 2px;
+    color: #1e293b;
+}
+
+.doctor-details p {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin-bottom: 2px;
+}
+
+.doctor-details small {
+    font-size: 0.75rem;
+    color: #94a3b8;
+}
+
+.doctor-status {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.doctor-status.status-available {
+    background: #d1fae5;
+    color: #059669;
+}
+
+.doctor-status.status-busy {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.doctor-status.status-leave {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.no-doctors {
+    text-align: center;
+    padding: 40px;
+    color: #64748b;
+}
+
+.no-doctors i {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    color: #e2e8f0;
+}

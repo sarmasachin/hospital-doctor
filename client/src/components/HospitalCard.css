@@ -1,0 +1,205 @@
+.hospital-card {
+    background: #1a1a2e;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    transition: transform 0.3s, box-shadow 0.3s;
+    padding: 15px 25px;
+    width: 100%;
+}
+
+.hospital-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+.hospital-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.hospital-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.hospital-icon {
+    font-size: 1.5rem;
+}
+
+.hospital-info h3 {
+    font-size: 1.3rem;
+    color: #e879f9;
+    font-weight: 600;
+    margin: 0;
+}
+
+.hospital-badge {
+    background: #22c55e;
+    color: white;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.hospital-details {
+    margin-bottom: 10px;
+}
+
+.hospital-detail-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #d1d5db;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+}
+
+.hospital-detail-item i {
+    color: #f472b6;
+    width: 20px;
+}
+
+.hospital-detail-item .label {
+    color: #9ca3af;
+}
+
+.total-doctors {
+    color: white;
+    font-size: 0.95rem;
+    margin-bottom: 12px;
+}
+
+.total-doctors strong {
+    color: #f472b6;
+}
+
+.status-boxes {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+}
+
+.status-box {
+    background: #16162a;
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+}
+
+.status-box-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 5px;
+}
+
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.status-dot.available {
+    background: #22c55e;
+}
+
+.status-dot.busy {
+    background: #f97316;
+}
+
+.status-dot.leave {
+    background: #ef4444;
+}
+
+.status-box-label {
+    color: #d1d5db;
+    font-size: 0.85rem;
+}
+
+.status-box-count {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 8px;
+}
+
+.status-box-btn {
+    width: 100%;
+    padding: 15px 20px;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-family: inherit;
+    font-size: 1rem;
+}
+
+.status-box-btn.available-btn {
+    background: #4dd0e1;
+    color: #1a1a2e;
+}
+
+.status-box-btn.available-btn:hover {
+    background: #26c6da;
+}
+
+.status-box-btn.busy-btn {
+    background: #69f0ae;
+    color: #1a1a2e;
+}
+
+.status-box-btn.busy-btn:hover {
+    background: #00e676;
+}
+
+.status-box-btn.leave-btn {
+    background: #f48fb1;
+    color: #1a1a2e;
+}
+
+.status-box-btn.leave-btn:hover {
+    background: #f06292;
+}
+
+@media (max-width: 768px) {
+    .hospital-card {
+        padding: 15px;
+    }
+    
+    .hospital-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .status-boxes {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .status-box {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 15px;
+    }
+    
+    .status-box-header {
+        margin-bottom: 0;
+    }
+    
+    .status-box-count {
+        margin: 0 15px;
+    }
+    
+    .status-box-btn {
+        width: auto;
+        padding: 10px 20px;
+    }
+}
