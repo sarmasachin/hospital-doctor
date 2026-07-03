@@ -1,0 +1,71 @@
+LiveHospital — Production deploy (public + panel subdomain)
+============================================================
+
+DO NOT mix with govmocktest.com — separate PM2, MySQL, nginx file.
+
+DOMAIN MAP
+----------
+  Public website : https://livehospital.org
+  Admin panel    : https://panel.livehospital.org
+
+  Super Admin    : https://panel.livehospital.org/admin.html
+  Hospital Admin : https://panel.livehospital.org/hospital-admin.html  (multiple users)
+  Blood Admin    : https://panel.livehospital.org/blood-admin.html     (multiple users)
+
+  Public API     : https://livehospital.org/api/...
+  Admin API      : https://panel.livehospital.org/api/...  (same Node app, same origin)
+
+DNS (registrar)
+---------------
+  A    @      → YOUR_SERVER_IP
+  CNAME www  → livehospital.org   (or A www → same IP)
+  A    panel  → YOUR_SERVER_IP
+
+SERVER PATHS
+------------
+  App root   : /var/www/livehospital.org
+  PM2 name   : livehospital (port 5006)
+  Nginx file : /etc/nginx/sites-available/livehospital.org
+  MySQL DB   : hospital_db / livehospital_user
+
+GovMockTest on SAME VPS (keep separate)
+---------------------------------------
+  admin-admin.govmocktest.com → mocktest-api :3000 → PostgreSQL
+  Do NOT edit /etc/nginx/sites-enabled/admin-admin.govmocktest.com when deploying LiveHospital
+
+Fresh deploy (server)
+---------------------
+  apt install -y mysql-server nginx git
+  curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt install -y nodejs
+  npm install -g pm2
+
+  mysql -e "CREATE DATABASE hospital_db; CREATE USER 'livehospital_user'@'localhost' IDENTIFIED BY 'YOUR_PASS'; GRANT ALL ON hospital_db.* TO 'livehospital_user'@'localhost';"
+
+  git clone https://github.com/sarmasachin/hospital-doctor.git /var/www/livehospital.org
+  mysql -u livehospital_user -p hospital_db < /var/www/livehospital.org/server/database.sql
+  cd /var/www/livehospital.org/server && npm install --production && node setup-security.js
+
+  cp server/.env.production.example server/.env
+  # Set DB_*, JWT_SECRET, SMTP, ADMIN_PANEL_BASE_URL=https://panel.livehospital.org
+
+  cd /var/www/livehospital.org && pm2 start deploy/ecosystem.config.js --env production && pm2 save
+
+  cp deploy/nginx-livehospital.conf /etc/nginx/sites-available/livehospital.org
+  ln -sf /etc/nginx/sites-available/livehospital.org /etc/nginx/sites-enabled/
+  nginx -t && systemctl reload nginx
+  certbot --nginx -d livehospital.org -d www.livehospital.org -d panel.livehospital.org
+
+Verify (no mix)
+---------------
+  curl -I https://livehospital.org/
+  curl -I https://panel.livehospital.org/admin.html
+  curl -I https://admin-admin.govmocktest.com/admin/
+
+Share with new hospital/blood admins
+------------------------------------
+  Give ONLY their login URL on panel subdomain + email/password from Super Admin.
+
+Default Super Admin (after setup-security.js)
+---------------------------------------------
+  Email: sharma.sachinctr@gmail.com
+  Password: comingsoon@123

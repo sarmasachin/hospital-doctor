@@ -1,5 +1,6 @@
 {
   "publicBaseUrl": "https://livehospital.org",
+  "adminPanelBaseUrl": "https://panel.livehospital.org",
   "basic": {
     "siteTitle": "LiveHospital",
     "tagline": "Doctor Availability System — आज डॉक्टर उपलब्ध हैं?",

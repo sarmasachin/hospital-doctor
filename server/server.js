@@ -23,11 +23,33 @@ app.use(helmet({
     crossOriginEmbedderPolicy: false
 }));
 
+const PUBLIC_SITE_HOSTS = new Set(['livehospital.org', 'www.livehospital.org']);
+const ADMIN_PANEL_BASE_URL = String(process.env.ADMIN_PANEL_BASE_URL || 'https://panel.livehospital.org').replace(/\/$/, '');
+
 // Middleware
 app.use(cors(IS_PRODUCTION ? {
-    origin: ['https://livehospital.org', 'https://www.livehospital.org'],
+    origin: [
+        'https://livehospital.org',
+        'https://www.livehospital.org',
+        'https://panel.livehospital.org',
+    ],
     credentials: true
 } : {}));
+
+// Production: admin HTML only on panel subdomain (public site redirects admin URLs)
+if (IS_PRODUCTION) {
+    app.use((req, res, next) => {
+        const host = String(req.hostname || '').toLowerCase();
+        if (!PUBLIC_SITE_HOSTS.has(host)) return next();
+        const p = req.path || '/';
+        if (/^\/(admin|hospital-admin|blood-admin)(\.html)?\/?$/i.test(p)) {
+            const normalized = p.replace(/\/$/, '') || '/admin';
+            const withHtml = /\.html$/i.test(normalized) ? normalized : `${normalized}.html`;
+            return res.redirect(301, `${ADMIN_PANEL_BASE_URL}${withHtml}`);
+        }
+        return next();
+    });
+}
 app.use(express.json());
 
 const authLoginLimiter = rateLimit({
@@ -63,6 +85,7 @@ let siteSettingsCache = null;
 function defaultSiteSettings() {
     return {
         publicBaseUrl: '',
+        adminPanelBaseUrl: 'https://panel.livehospital.org',
         basic: {
             siteTitle: '',
             tagline: '',

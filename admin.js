@@ -1353,10 +1353,8 @@ function loadFooterData() {
                 { id: 3, title: 'कुकी नीति', value: 'cookies.html' }
             ],
             quicklinks: [
-                { id: 1, title: 'Hospital Admin', value: 'hospital-admin.html' },
-                { id: 2, title: 'Blood Admin', value: 'blood-admin.html' },
-                { id: 3, title: 'Super Admin', value: 'admin.html' },
-                { id: 4, title: 'Contact', value: 'contact.html' }
+                { id: 1, title: 'Contact', value: 'contact.html' },
+                { id: 2, title: 'Privacy', value: 'privacy.html' }
             ],
             follow: [
                 { id: 1, icon: 'f', title: 'Facebook', value: 'https://facebook.com' },

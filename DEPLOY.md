@@ -17,7 +17,8 @@ At your domain registrar, add these records:
 | Type | Name | Value |
 |------|------|-------|
 | A | @ | YOUR_SERVER_IP |
-| A | www | YOUR_SERVER_IP |
+| A | www | YOUR_SERVER_IP *(or CNAME www → livehospital.org)* |
+| A | panel | YOUR_SERVER_IP |
 
 Wait 5–30 minutes for DNS to propagate.
 
@@ -106,6 +107,8 @@ DB_PASSWORD=YOUR_STRONG_DB_PASSWORD
 DB_NAME=hospital_db
 JWT_SECRET=generate-a-long-random-string-here
 JWT_EXPIRES_IN=7d
+PUBLIC_BASE_URL=https://livehospital.org
+ADMIN_PANEL_BASE_URL=https://panel.livehospital.org
 ```
 
 Generate JWT secret:
@@ -143,21 +146,26 @@ sudo nginx -t
 sudo systemctl reload nginx
 
 sudo apt install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d livehospital.org -d www.livehospital.org
+sudo certbot --nginx -d livehospital.org -d www.livehospital.org -d panel.livehospital.org
 ```
 
 ---
 
 ## Step 8: Verify
 
-- https://livehospital.org — main website
-- https://livehospital.org/admin.html — super admin
-- https://livehospital.org/api/hospitals — API
+- https://livehospital.org — public website (no admin links)
+- https://panel.livehospital.org/admin.html — super admin
+- https://panel.livehospital.org/hospital-admin.html — hospital admins (multiple)
+- https://panel.livehospital.org/blood-admin.html — blood admins (multiple)
+- https://livehospital.org/api/hospitals — public API
 
-**Admin login**
+**Admin login (Super Admin)**
 
+- URL: https://panel.livehospital.org/admin.html
 - Email: `sharma.sachinctr@gmail.com`
 - Password: `comingsoon@123`
+
+**Share with new admins:** give only their panel URL + credentials (not livehospital.org/admin).
 
 ---
 

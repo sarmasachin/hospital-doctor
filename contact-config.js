@@ -151,4 +151,4 @@
     global.DEFAULT_CONTACT = DEFAULT_CONTACT;
 
     applySiteContact(DEFAULT_CONTACT);
-})();
+})(typeof window !== 'undefined' ? window : this);
