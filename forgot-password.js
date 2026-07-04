@@ -32,8 +32,12 @@
         const loginForm = document.getElementById('loginForm');
         const forgotPanel = document.getElementById('forgotPasswordPanel');
         const forgotLinkWrap = document.getElementById('forgotPasswordLinkWrap');
+        const loginHead = document.querySelector('.login-card-head');
+        const loginNote = document.querySelector('.login-panel-note');
         if (loginForm) loginForm.style.display = 'none';
         if (forgotLinkWrap) forgotLinkWrap.style.display = 'none';
+        if (loginHead) loginHead.style.display = 'none';
+        if (loginNote) loginNote.style.display = 'none';
         if (forgotPanel) {
             forgotPanel.classList.add('active');
             forgotPanel.style.display = 'block';
@@ -48,8 +52,12 @@
         const loginForm = document.getElementById('loginForm');
         const forgotPanel = document.getElementById('forgotPasswordPanel');
         const forgotLinkWrap = document.getElementById('forgotPasswordLinkWrap');
+        const loginHead = document.querySelector('.login-card-head');
+        const loginNote = document.querySelector('.login-panel-note');
         if (loginForm) loginForm.style.display = '';
         if (forgotLinkWrap) forgotLinkWrap.style.display = '';
+        if (loginHead) loginHead.style.display = '';
+        if (loginNote) loginNote.style.display = '';
         if (forgotPanel) {
             forgotPanel.classList.remove('active');
             forgotPanel.style.display = 'none';
@@ -65,14 +73,14 @@
     async function sendOtp() {
         const email = (document.getElementById('forgotEmail')?.value || '').trim().toLowerCase();
         if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            showForgotMessage('कृपया सही Gmail / Email डालें', 'error');
+            showForgotMessage('Please enter a valid email address', 'error');
             return;
         }
 
         const btn = document.getElementById('btnSendOtp');
         if (btn) {
             btn.disabled = true;
-            btn.textContent = 'भेजा जा रहा है...';
+            btn.textContent = 'Sending...';
         }
         clearForgotMessage();
 
@@ -85,23 +93,23 @@
             const data = await res.json();
 
             if (!res.ok) {
-                showForgotMessage(data.error || 'OTP भेजने में समस्या हुई', 'error');
+                showForgotMessage(data.error || 'Unable to send verification code', 'error');
                 return;
             }
 
-            let msg = 'OTP आपके email पर भेज दिया गया है। कृपया inbox जाँचें।';
+            let msg = 'Verification code sent. Please check your email.';
             if (data.devOtp) {
-                msg += ' (Dev OTP: ' + data.devOtp + ')';
+                msg += ' (Dev code: ' + data.devOtp + ')';
             }
             showForgotMessage(msg, 'success');
             showForgotStep(2);
             document.getElementById('forgotOtp')?.focus();
         } catch (e) {
-            showForgotMessage('सर्वर कनेक्शन विफल!', 'error');
+            showForgotMessage('Connection failed. Please try again.', 'error');
         } finally {
             if (btn) {
                 btn.disabled = false;
-                btn.textContent = '📧 OTP भेजें';
+                btn.textContent = 'Send code';
             }
         }
     }
@@ -113,22 +121,22 @@
         const confirmPassword = document.getElementById('forgotConfirmPassword')?.value || '';
 
         if (!otp || otp.length !== 6) {
-            showForgotMessage('कृपया 6 अंकों का OTP डालें', 'error');
+            showForgotMessage('Please enter the 6-digit verification code', 'error');
             return;
         }
         if (!newPassword || newPassword.length < 6) {
-            showForgotMessage('नया पासवर्ड कम से कम 6 अक्षर का होना चाहिए', 'error');
+            showForgotMessage('Password must be at least 6 characters', 'error');
             return;
         }
         if (newPassword !== confirmPassword) {
-            showForgotMessage('पासवर्ड मेल नहीं खा रहे', 'error');
+            showForgotMessage('Passwords do not match', 'error');
             return;
         }
 
         const btn = document.getElementById('btnResetPassword');
         if (btn) {
             btn.disabled = true;
-            btn.textContent = 'अपडेट हो रहा है...';
+            btn.textContent = 'Updating...';
         }
         clearForgotMessage();
 
@@ -141,18 +149,18 @@
             const data = await res.json();
 
             if (!res.ok) {
-                showForgotMessage(data.error || 'पासवर्ड बदलने में समस्या हुई', 'error');
+                showForgotMessage(data.error || 'Unable to update password', 'error');
                 return;
             }
 
-            showForgotMessage('✅ पासवर्ड सफलतापूर्वक बदल गया! अब लॉगिन करें।', 'success');
+            showForgotMessage('Password updated successfully. You can sign in now.', 'success');
             setTimeout(closeForgotPanel, 2500);
         } catch (e) {
-            showForgotMessage('सर्वर कनेक्शन विफल!', 'error');
+            showForgotMessage('Connection failed. Please try again.', 'error');
         } finally {
             if (btn) {
                 btn.disabled = false;
-                btn.textContent = '🔐 नया पासवर्ड सेट करें';
+                btn.textContent = 'Update password';
             }
         }
     }
