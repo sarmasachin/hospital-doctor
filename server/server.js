@@ -5,7 +5,7 @@ const mysql = require('mysql2');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const { hashPassword, verifyPassword, signToken, authenticate, requireSuperAdmin, requireAdminRole, requireDoctorManager, requireBloodManager, requireHospitalIdAccess } = require('./auth');
 const { sendOtpEmail, isEmailConfigured } = require('./email-service');
 const crypto = require('crypto');
@@ -191,6 +191,10 @@ app.use((req, res, next) => {
 });
 
 // MySQL Connection Pool (Better performance)
+if (!process.env.DB_USER || !process.env.DB_NAME) {
+    console.error('Missing DB env vars. Check server/.env and restart PM2 with deploy/ecosystem.config.js');
+}
+
 const db = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
