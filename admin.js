@@ -370,26 +370,14 @@ async function loadBloodAdmins() {
 }
 
 const CITY_BUTTONS_KEY = 'cityButtons';
-const DEFAULT_CITY_BUTTONS = [
-    { name: 'दिल्ली', value: 'delhi' },
-    { name: 'मुंबई', value: 'mumbai' },
-    { name: 'लखनऊ', value: 'lucknow' },
-    { name: 'जयपुर', value: 'jaipur' },
-    { name: 'मोहाली', value: 'mohali' },
-    { name: 'गुड़गांव', value: 'gurugram' }
-];
 
 function loadCities() {
     try {
         const saved = localStorage.getItem(CITY_BUTTONS_KEY);
         cities = saved ? JSON.parse(saved) : [];
-        if (cities.length === 0) {
-            cities = JSON.parse(JSON.stringify(DEFAULT_CITY_BUTTONS));
-            localStorage.setItem(CITY_BUTTONS_KEY, JSON.stringify(cities));
-        }
+        if (!Array.isArray(cities)) cities = [];
     } catch (_) {
-        cities = JSON.parse(JSON.stringify(DEFAULT_CITY_BUTTONS));
-        localStorage.setItem(CITY_BUTTONS_KEY, JSON.stringify(cities));
+        cities = [];
     }
     renderCitiesTable();
 }
@@ -1340,29 +1328,19 @@ function loadFooterData() {
     if (savedData) {
         footerData = JSON.parse(savedData);
     } else {
-        // Default footer data
         footerData = {
             contact: [
-                { id: 1, icon: '📞', title: 'Phone', value: '' },
-                { id: 2, icon: '📧', title: 'Email', value: 'support@livehospital.org' },
-                { id: 3, icon: '📍', title: 'Address', value: 'India' }
+                { id: 1, icon: '📧', title: 'Email', value: 'support@livehospital.org' }
             ],
             important: [
-                { id: 1, title: 'गोपनीयता नीति', value: 'privacy.html' },
-                { id: 2, title: 'नियम और शर्तें', value: 'terms.html' },
-                { id: 3, title: 'कुकी नीति', value: 'cookies.html' }
+                { id: 1, title: 'गोपनीयता नीति', value: '/privacy' },
+                { id: 2, title: 'नियम और शर्तें', value: '/terms' },
+                { id: 3, title: 'कुकी नीति', value: '/cookies' }
             ],
             quicklinks: [
-                { id: 1, title: 'Contact', value: 'contact.html' },
-                { id: 2, title: 'Privacy', value: 'privacy.html' }
+                { id: 1, title: 'Contact', value: '/contact' }
             ],
-            follow: [
-                { id: 1, icon: 'f', title: 'Facebook', value: 'https://facebook.com' },
-                { id: 2, icon: 'i', title: 'Instagram', value: 'https://instagram.com' },
-                { id: 3, icon: 'w', title: 'WhatsApp', value: 'https://whatsapp.com' },
-                { id: 4, icon: 'y', title: 'YouTube', value: 'https://youtube.com' },
-                { id: 5, icon: 't', title: 'Twitter', value: 'https://twitter.com' }
-            ]
+            follow: []
         };
         saveFooterData();
     }

@@ -585,14 +585,8 @@ function validateSearch(query) {
     return true;
 }
 
-// Featured Doctors Data (Admin added doctors)
-let featuredDoctors = [
-    { id: 101, name: "डॉ. विकास ठाकुर", specialty: "हड्डियों के डॉक्टर", hospitalName: "क्षेत्रीय अस्पताल, बिलासपुर", location: "bilaspur", status: "available", timing: "09:30 AM - 04:00 PM", opd: "Mon,Tue,Wed,Thu,Fri,Sat" },
-    { id: 102, name: "डॉ. अंजली शर्मा", specialty: "स्त्री रोग विशेषज्ञ", hospitalName: "जिला अस्पताल, रायपुर", location: "raipur", status: "available", timing: "10:00 AM - 05:00 PM", opd: "Mon,Tue,Wed,Thu,Fri" },
-    { id: 103, name: "डॉ. राहुल वर्मा", specialty: "बाल रोग विशेषज्ञ", hospitalName: "मेडिकल कॉलेज, भिलाई", location: "bhilai", status: "busy", timing: "08:00 AM - 02:00 PM", opd: "Mon,Wed,Fri,Sat" },
-    { id: 104, name: "डॉ. प्रिया पटेल", specialty: "त्वचा विशेषज्ञ", hospitalName: "सिटी हॉस्पिटल, दुर्ग", location: "durg", status: "available", timing: "11:00 AM - 06:00 PM", opd: "Tue,Thu,Sat" },
-    { id: 105, name: "डॉ. संजय गुप्ता", specialty: "हृदय रोग विशेषज्ञ", hospitalName: "हार्ट केयर सेंटर, रायपुर", location: "raipur", status: "leave", timing: "09:00 AM - 03:00 PM", opd: "Mon,Tue,Wed,Thu,Fri,Sat" }
-];
+// Featured doctors shown in search (admin/API only — no hardcoded demo rows)
+let featuredDoctors = [];
 
 // Maximum hospitals to show
 const MAX_HOSPITALS = 5;
@@ -820,7 +814,15 @@ function renderPage() {
     
     // Render Hospital Cards
     html += '<div class="hospitals-list">';
-    html += paginatedHospitals.map(hospital => renderHospitalCard(hospital)).join('');
+    if (totalHospitals === 0) {
+        html += `
+            <div class="no-results">
+                <p>अभी कोई हॉस्पिटल दर्ज नहीं है। Admin panel से अस्पताल जोड़ें।</p>
+            </div>
+        `;
+    } else {
+        html += paginatedHospitals.map(hospital => renderHospitalCard(hospital)).join('');
+    }
     html += '</div>';
     
     // Add pagination
@@ -956,24 +958,14 @@ function filterBySpecialty(specialty) {
     grid.innerHTML = html;
 }
 
-// Default city buttons (fallback when localStorage is empty)
-const cityListDefault = [
-    { name: 'दिल्ली', value: 'delhi' },
-    { name: 'मुंबई', value: 'mumbai' },
-    { name: 'लखनऊ', value: 'lucknow' },
-    { name: 'जयपुर', value: 'jaipur' },
-    { name: 'मोहाली', value: 'mohali' },
-    { name: 'गुड़गांव', value: 'gurugram' }
-];
-
 function getCityButtons() {
     try {
         const saved = localStorage.getItem('cityButtons');
-        if (!saved) return cityListDefault;
+        if (!saved) return [];
         const arr = JSON.parse(saved);
-        return Array.isArray(arr) && arr.length ? arr : cityListDefault;
+        return Array.isArray(arr) ? arr : [];
     } catch (_) {
-        return cityListDefault;
+        return [];
     }
 }
 
@@ -982,6 +974,15 @@ function showCitySearch() {
     localStorage.setItem('currentView', JSON.stringify({ type: 'city' }));
     const grid = document.getElementById('hospitalsGrid');
     const list = getCityButtons();
+    if (!list.length) {
+        grid.innerHTML = `
+            ${getSpecialtyButtonsHTML()}
+            <div class="no-results">
+                <p>अभी कोई शहर बटन सेट नहीं है। Admin panel → Cities से जोड़ें।</p>
+            </div>
+        `;
+        return;
+    }
     grid.innerHTML = `
         ${getSpecialtyButtonsHTML()}
         <div class="city-search-header">
