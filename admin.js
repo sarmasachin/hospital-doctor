@@ -2378,6 +2378,8 @@ async function loadSiteSettingsAdmin() {
         const social = data.social || {};
         const sf = document.getElementById('siteSocialFacebook');
         if (sf) sf.value = social.facebook || '';
+        const stg = document.getElementById('siteSocialTelegram');
+        if (stg) stg.value = social.telegram || '';
         const si = document.getElementById('siteSocialInstagram');
         if (si) si.value = social.instagram || '';
         const sy = document.getElementById('siteSocialYoutube');
@@ -2457,6 +2459,7 @@ async function saveSiteSettingsAdmin() {
         },
         social: {
             facebook: trimVal('siteSocialFacebook'),
+            telegram: trimVal('siteSocialTelegram'),
             instagram: trimVal('siteSocialInstagram'),
             youtube: trimVal('siteSocialYoutube'),
             twitter: trimVal('siteSocialTwitter'),

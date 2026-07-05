@@ -57,6 +57,7 @@
             instagram: trim(social.instagram),
             youtube: trim(social.youtube),
             twitter: trim(social.twitter),
+            telegram: trim(social.telegram),
             whatsapp: trim(social.whatsapp) || waFromContact
         };
 
@@ -73,19 +74,20 @@
                     el.style.display = 'none';
                 }
             });
-            document.querySelectorAll('li[data-social-hide-empty]').forEach(function (li) {
-                var link = li.querySelector('[data-social-' + network + ']');
-                if (!link) return;
-                li.style.display = valid ? '' : 'none';
-            });
         });
 
         document.querySelectorAll('.social-icons').forEach(function (box) {
             var visible = false;
-            box.querySelectorAll('a[data-social-facebook], a[data-social-instagram], a[data-social-whatsapp], a[data-social-youtube], a[data-social-twitter]').forEach(function (a) {
+            box.querySelectorAll('a.social-icon').forEach(function (a) {
                 if (a.style.display !== 'none') visible = true;
             });
             box.style.display = visible ? '' : 'none';
+        });
+
+        document.querySelectorAll('.footer-col-connect').forEach(function (col) {
+            var icons = col.querySelector('.social-icons');
+            var hasIcons = icons && icons.style.display !== 'none';
+            col.style.display = hasIcons ? '' : 'none';
         });
     }
 

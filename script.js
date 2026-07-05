@@ -156,6 +156,125 @@ function showInfo(title, message, duration) {
 let hospitalsData = [];
 let bloodRequests = [];
 
+// ==================== DOCTOR OPD SCHEDULE (auto छुट्टी outside hours) ====================
+const OPD_DAY_ORDER = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+const OPD_DAY_INDEX = {
+    sunday: 0, sun: 0,
+    monday: 1, mon: 1,
+    tuesday: 2, tue: 2, tues: 2,
+    wednesday: 3, wed: 3,
+    thursday: 4, thu: 4, thur: 4, thurs: 4,
+    friday: 5, fri: 5,
+    saturday: 6, sat: 6
+};
+
+function parseTimeToMinutes(str) {
+    if (!str) return null;
+    const s = String(str).trim().toLowerCase().replace(/\./g, '');
+    const m24 = s.match(/^(\d{1,2}):(\d{2})$/);
+    if (m24) {
+        const h = parseInt(m24[1], 10);
+        const m = parseInt(m24[2], 10);
+        if (h >= 0 && h < 24 && m >= 0 && m < 60) return h * 60 + m;
+    }
+    const m12 = s.match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)$/);
+    if (m12) {
+        let h = parseInt(m12[1], 10);
+        const m = m12[2] ? parseInt(m12[2], 10) : 0;
+        const ampm = m12[3];
+        if (h < 1 || h > 12 || m < 0 || m >= 60) return null;
+        if (ampm === 'pm' && h !== 12) h += 12;
+        if (ampm === 'am' && h === 12) h = 0;
+        return h * 60 + m;
+    }
+    return null;
+}
+
+function parseTimingRange(timing) {
+    if (!timing || !String(timing).trim()) return null;
+    const parts = String(timing).trim().split(/\s*(?:-|–|—|\bto\b)\s*/i);
+    if (parts.length < 2) return null;
+    const start = parseTimeToMinutes(parts[0]);
+    const end = parseTimeToMinutes(parts[1]);
+    if (start == null || end == null) return null;
+    return { start, end };
+}
+
+function parseOpdDays(opdDays) {
+    if (!opdDays || !String(opdDays).trim()) return null;
+    const days = new Set();
+    String(opdDays).toLowerCase().split(/[,;]+/).map(t => t.trim()).filter(Boolean).forEach(token => {
+        const range = token.match(/^(sun|mon|tue|wed|thu|fri|sat)\s*[-–]\s*(sun|mon|tue|wed|thu|fri|sat)$/);
+        if (range) {
+            const startIdx = OPD_DAY_ORDER.indexOf(range[1]);
+            const endIdx = OPD_DAY_ORDER.indexOf(range[2]);
+            if (startIdx === -1 || endIdx === -1) return;
+            if (startIdx <= endIdx) {
+                for (let i = startIdx; i <= endIdx; i++) days.add(i);
+            } else {
+                for (let i = startIdx; i < 7; i++) days.add(i);
+                for (let i = 0; i <= endIdx; i++) days.add(i);
+            }
+            return;
+        }
+        const key = token.replace(/[^a-z]/g, '');
+        if (OPD_DAY_INDEX[key] !== undefined) {
+            days.add(OPD_DAY_INDEX[key]);
+            return;
+        }
+        const short = OPD_DAY_ORDER.find(d => key === d || key.startsWith(d));
+        if (short) days.add(OPD_DAY_ORDER.indexOf(short));
+    });
+    return days.size ? days : null;
+}
+
+function isTimeInOpdRange(nowMinutes, start, end) {
+    if (start === end) return true;
+    if (start < end) return nowMinutes >= start && nowMinutes < end;
+    return nowMinutes >= start || nowMinutes < end;
+}
+
+function isDoctorWithinOpdSchedule(doctor, now = new Date()) {
+    const opdDays = parseOpdDays(doctor.opd_days ?? doctor.opd);
+    if (opdDays && !opdDays.has(now.getDay())) return false;
+    const range = parseTimingRange(doctor.timing);
+    if (!range) return true;
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    return isTimeInOpdRange(nowMinutes, range.start, range.end);
+}
+
+function doctorHasSchedule(doctor) {
+    return !!(parseTimingRange(doctor.timing) || parseOpdDays(doctor.opd_days ?? doctor.opd));
+}
+
+function getEffectiveDoctorStatus(doctor, now = new Date()) {
+    const base = String(doctor.db_status || doctor.status || 'available').toLowerCase();
+    if (!doctorHasSchedule(doctor)) return base;
+    if (!isDoctorWithinOpdSchedule(doctor, now)) return 'leave';
+    return base;
+}
+
+function snapshotDoctorDbStatuses(hospitals) {
+    (hospitals || []).forEach(h => {
+        (h.doctors || []).forEach(d => {
+            if (d.db_status == null) d.db_status = d.status;
+        });
+    });
+}
+
+function applyEffectiveDoctorStatuses(hospitals, now = new Date()) {
+    let changed = false;
+    (hospitals || hospitalsData).forEach(h => {
+        (h.doctors || []).forEach(d => {
+            if (d.db_status == null) d.db_status = d.status;
+            const effective = getEffectiveDoctorStatus(d, now);
+            if (d.status !== effective) changed = true;
+            d.status = effective;
+        });
+    });
+    return changed;
+}
+
 // ==================== API FUNCTIONS ====================
 
 // Fetch all hospitals with their doctors
@@ -223,6 +342,8 @@ async function loadDataFromAPI() {
         
         hospitalsData = hospitals;
         bloodRequests = blood;
+        snapshotDoctorDbStatuses(hospitalsData);
+        applyEffectiveDoctorStatuses(hospitalsData);
         lastDataRefreshTime = Date.now();
         
         console.log('Data loaded from API:', {
@@ -312,6 +433,13 @@ function cleanupExpiredBloodRequests() {
 
 // Run cleanup every hour
 setInterval(cleanupExpiredBloodRequests, 60 * 60 * 1000);
+
+// Re-check OPD timing every minute — auto छुट्टी after hours
+setInterval(() => {
+    if (!hospitalsData.length) return;
+    const changed = applyEffectiveDoctorStatuses(hospitalsData);
+    if (changed) rerenderCurrentView();
+}, 60 * 1000);
 
 // ==================== LOCATION FUNCTIONS ====================
 
@@ -472,6 +600,9 @@ function applySavedView(view) {
             break;
         case 'blood':
             showBloodUpdates(view.hospitalId);
+            break;
+        case 'hospital':
+            showHospitalOverview(view.hospitalId);
             break;
         case 'specialty':
             filterBySpecialty(view.specialty);
@@ -1059,6 +1190,71 @@ function getSpecialtyButtonsHTML(activeFirst) {
 }
 
 // Show Blood Updates for specific hospital
+function showHospitalOverview(hospitalId) {
+    const hospital = hospitalsData.find(h => h.id === hospitalId);
+    if (!hospital) return;
+
+    localStorage.setItem('currentView', JSON.stringify({
+        type: 'hospital',
+        hospitalId: hospitalId
+    }));
+
+    currentPaginationType = 'hospital';
+
+    const typeLabel = hospital.type === 'GOV' ? 'सरकारी हॉस्पिटल' : 'प्राइवेट हॉस्पिटल';
+    const availableCount = hospital.doctors.filter(d => d.status === 'available').length;
+    const busyCount = hospital.doctors.filter(d => d.status === 'busy').length;
+    const leaveCount = hospital.doctors.filter(d => d.status === 'leave').length;
+    const totalDoctors = hospital.doctors.length;
+    const distanceHTML = (hospital.distance != null && !isNaN(hospital.distance))
+        ? `<p class="hospital-overview-line">📍 दूरी: ${formatDistance(hospital.distance)}</p>`
+        : '';
+    const lastUpdateText = formatLastUpdate(hospital.updated_at);
+    const lastUpdateHTML = lastUpdateText ? `<p class="hospital-overview-meta">${lastUpdateText}</p>` : '';
+
+    const grid = document.getElementById('hospitalsGrid');
+    grid.innerHTML = getSpecialtyButtonsHTML() + `
+        <div class="hospital-overview-card">
+            <button type="button" class="btn-back" onclick="goBackToHospitals()">← वापस</button>
+            <div class="hospital-overview-header">
+                <h2>🏥 ${escapeHtml(hospital.name)}</h2>
+                <p class="hospital-overview-line">📍 ${escapeHtml(hospital.location)}</p>
+                <p class="hospital-overview-line">🏢 ${typeLabel}</p>
+                ${distanceHTML}
+                <p class="hospital-overview-line">👨‍⚕️ कुल डॉक्टर: <strong>${totalDoctors}</strong></p>
+                ${lastUpdateHTML}
+            </div>
+            <div class="hospital-overview-stats">
+                <div class="hospital-overview-stat available">
+                    <span class="dot green"></span>
+                    <span>उपलब्ध</span>
+                    <strong>${availableCount}</strong>
+                </div>
+                <div class="hospital-overview-stat busy">
+                    <span class="dot orange"></span>
+                    <span>व्यस्त</span>
+                    <strong>${busyCount}</strong>
+                </div>
+                <div class="hospital-overview-stat leave">
+                    <span class="dot red"></span>
+                    <span>छुट्टी</span>
+                    <strong>${leaveCount}</strong>
+                </div>
+            </div>
+            <div class="hospital-overview-actions">
+                <button type="button" class="card-cta" onclick="showDoctorsByStatus(${hospital.id}, 'available')">
+                    <span class="cta-icon">👨‍⚕️</span>
+                    <span class="cta-text">डॉक्टर देखें</span>
+                </button>
+                <button type="button" class="card-dept-btn card-dept-blood hospital-overview-blood" onclick="showBloodUpdates(${hospital.id})">
+                    <span class="dept-btn-icon" aria-hidden="true">🩸</span>
+                    <span class="dept-btn-text">Blood Dept</span>
+                </button>
+            </div>
+        </div>
+    `;
+}
+
 function showBloodUpdates(hospitalId) {
     // Save current view to localStorage
     localStorage.setItem('currentView', JSON.stringify({
@@ -1380,7 +1576,10 @@ async function submitDoctorFeedback(doctorId, type) {
         const data = await res.json().catch(() => ({}));
         if (data.updated && data.newStatus) {
             updateDoctorInData(doctorId, data.newStatus);
-            updateDoctorCardStatusBadge(doctorId, data.newStatus);
+            const effective = getEffectiveDoctorStatus(
+                hospitalsData.flatMap(h => h.doctors || []).find(d => d.id === doctorId) || { status: data.newStatus, db_status: data.newStatus }
+            );
+            updateDoctorCardStatusBadge(doctorId, effective);
             showToast('success', 'स्टेटस अपडेट', 'मरीजों के फीडबैक के आधार पर डॉक्टर का स्टेटस अपडेट हो गया।');
         }
     } catch (e) {
@@ -1391,7 +1590,10 @@ async function submitDoctorFeedback(doctorId, type) {
 function updateDoctorInData(doctorId, newStatus) {
     hospitalsData.forEach(h => {
         const d = h.doctors && h.doctors.find(doc => doc.id === doctorId);
-        if (d) d.status = newStatus;
+        if (d) {
+            d.db_status = newStatus;
+            d.status = getEffectiveDoctorStatus(d);
+        }
     });
 }
 
@@ -1520,6 +1722,16 @@ function renderHospitalCard(hospital) {
                 <div class="card-quick-actions">
                     <button type="button" class="quick-action quick-blood" onclick="showBloodUpdates(${hospital.id})" title="Blood Updates" aria-label="Blood Updates">
                         <span aria-hidden="true">🩸</span>
+                    </button>
+                </div>
+                <div class="card-mobile-dept-btns">
+                    <button type="button" class="card-dept-btn card-dept-hospital" onclick="showHospitalOverview(${hospital.id})" aria-label="Hospital">
+                        <span class="dept-btn-icon" aria-hidden="true">🏥</span>
+                        <span class="dept-btn-text">Hospital</span>
+                    </button>
+                    <button type="button" class="card-dept-btn card-dept-blood" onclick="showBloodUpdates(${hospital.id})" aria-label="Blood Dept">
+                        <span class="dept-btn-icon" aria-hidden="true">🩸</span>
+                        <span class="dept-btn-text">Blood Dept</span>
                     </button>
                 </div>
             </div>
@@ -2500,7 +2712,9 @@ function showDoctorsByStatus(hospitalId, status) {
     currentPaginationType = 'doctors';
     
     const hospital = hospitalsData.find(h => h.id === hospitalId);
-    const doctorsByStatus = hospital.doctors.filter(d => d.status === status);
+    const doctorsByStatus = status === 'all'
+        ? hospital.doctors
+        : hospital.doctors.filter(d => d.status === status);
     const totalDoctors = doctorsByStatus.length;
     const paginatedDoctors = getPaginatedItems(doctorsByStatus, currentPage);
     

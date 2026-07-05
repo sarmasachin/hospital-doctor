@@ -1689,6 +1689,129 @@ body {
     background: rgba(244, 63, 94, 0.3);
 }
 
+/* Mobile-only dept buttons below डॉक्टर देखें */
+.card-mobile-dept-btns {
+    display: none;
+    width: 100%;
+    gap: 10px;
+}
+
+.card-dept-btn {
+    flex: 1;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    background: #1c1f26;
+    color: #ffffff;
+    font-size: 0.88rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+
+.card-dept-btn .dept-btn-icon {
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.card-dept-btn:active {
+    transform: scale(0.98);
+}
+
+.card-dept-hospital:hover {
+    background: #243044;
+    border-color: #38bdf8;
+}
+
+.card-dept-blood {
+    background: rgba(244, 63, 94, 0.15);
+    border-color: rgba(244, 63, 94, 0.45);
+    color: #fda4af;
+}
+
+.card-dept-blood:hover {
+    background: rgba(244, 63, 94, 0.28);
+    border-color: #f43f5e;
+}
+
+/* Hospital overview (mobile Hospital button) */
+.hospital-overview-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 18px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+}
+
+.hospital-overview-header h2 {
+    margin: 0 0 10px;
+    font-size: 1.2rem;
+    color: #fff;
+    line-height: 1.35;
+    word-break: break-word;
+}
+
+.hospital-overview-line {
+    margin: 0 0 6px;
+    color: rgba(255, 255, 255, 0.88);
+    font-size: 0.9rem;
+    line-height: 1.45;
+}
+
+.hospital-overview-meta {
+    margin: 8px 0 0;
+    color: #9ca3af;
+    font-size: 0.78rem;
+}
+
+.hospital-overview-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.hospital-overview-stat {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    padding: 10px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.hospital-overview-stat strong {
+    font-size: 1.1rem;
+    color: #fff;
+}
+
+.hospital-overview-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.hospital-overview-actions .card-cta {
+    width: 100%;
+}
+
+.hospital-overview-blood {
+    width: 100%;
+}
+
 /* Legacy button classes (if used elsewhere) */
 .btn-view, .btn-whatsapp, .btn-blood {
     flex: 1;
@@ -3202,31 +3325,60 @@ body {
     color: #60a5fa;
 }
 
-/* Social Icons */
+/* Social Icons — CONNECT row */
+.footer-connect-title {
+    color: #4ade80;
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    margin-bottom: 18px;
+    text-transform: uppercase;
+}
+
+.footer-col-connect {
+    display: flex;
+    flex-direction: column;
+}
+
 .social-icons {
     display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 0;
+}
+
+.social-icons-connect {
     gap: 12px;
-    margin-top: 15px;
 }
 
 .social-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: #1e293b;
-    border: 1px solid #374151;
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    background: #1c1f26;
+    border: 1px solid #2a2f3a;
     display: flex;
     align-items: center;
     justify-content: center;
     color: #ffffff;
-    font-size: 1rem;
-    font-weight: 600;
     text-decoration: none;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+    flex-shrink: 0;
+}
+
+.social-icon svg {
+    display: block;
 }
 
 .social-icon:hover {
-    background: #1e88e5;
-    border-color: #1e88e5;
+    background: #2a3140;
+    border-color: #4ade80;
+    transform: translateY(-2px);
+}
+
+.social-icon:focus-visible {
+    outline: 2px solid #4ade80;
+    outline-offset: 2px;
 }
 
 /* Sub Footer - Base */
@@ -3676,6 +3828,8 @@ body {
     
     .card-actions {
         flex-wrap: wrap;
+        flex-direction: column;
+        align-items: stretch;
         gap: 10px;
         padding-top: 14px;
     }
@@ -3687,15 +3841,16 @@ body {
     }
     
     .card-quick-actions {
-        width: 100%;
-        justify-content: flex-end;
+        display: none !important;
+    }
+
+    .card-mobile-dept-btns {
+        display: flex;
     }
     
-    .quick-action {
-        width: 48px;
-        height: 48px;
-        min-width: 48px;
-        min-height: 48px;
+    .card-dept-btn {
+        min-height: 46px;
+        font-size: 0.85rem;
     }
     
     .card-buttons {
@@ -4057,6 +4212,12 @@ body {
         min-height: 46px;
         font-size: 0.95rem;
     }
+
+    .card-dept-btn {
+        min-height: 44px;
+        font-size: 0.8rem;
+        padding: 9px 10px;
+    }
     
     .quick-action {
         width: 46px;
@@ -4265,6 +4426,17 @@ body {
     .card-cta {
         min-height: 44px;
         font-size: 0.9rem;
+    }
+
+    .card-dept-btn {
+        min-height: 42px;
+        font-size: 0.75rem;
+        gap: 4px;
+        padding: 8px 8px;
+    }
+
+    .card-mobile-dept-btns {
+        gap: 8px;
     }
     
     .quick-action {
@@ -4963,10 +5135,19 @@ html[data-theme="light"] .footer-col h4 {
     border-bottom-color: rgba(15, 23, 42, 0.12);
 }
 
+html[data-theme="light"] .footer-connect-title {
+    color: #16a34a;
+}
+
 html[data-theme="light"] .social-icon {
     background: #e2e8f0;
     border-color: #cbd5e1;
     color: #0f172a;
+}
+
+html[data-theme="light"] .social-icon:hover {
+    background: #d1fae5;
+    border-color: #16a34a;
 }
 
 html[data-theme="light"] .sub-footer {
@@ -5026,6 +5207,48 @@ html[data-theme="light"] .page-dots {
 
 html[data-theme="light"] .hospital-card .star-btn {
     color: #94a3b8;
+}
+
+html[data-theme="light"] .card-dept-btn {
+    background: #e2e8f0;
+    border-color: #cbd5e1;
+    color: #0f172a;
+}
+
+html[data-theme="light"] .card-dept-hospital:hover {
+    background: #dbeafe;
+    border-color: #2563eb;
+}
+
+html[data-theme="light"] .card-dept-blood {
+    background: #ffe4e6;
+    border-color: #fda4af;
+    color: #be123c;
+}
+
+html[data-theme="light"] .card-dept-blood:hover {
+    background: #fecdd3;
+    border-color: #e11d48;
+}
+
+html[data-theme="light"] .hospital-overview-card {
+    background: #ffffff;
+    border-color: #e2e8f0;
+}
+
+html[data-theme="light"] .hospital-overview-header h2,
+html[data-theme="light"] .hospital-overview-stat strong {
+    color: #0f172a;
+}
+
+html[data-theme="light"] .hospital-overview-line {
+    color: #334155;
+}
+
+html[data-theme="light"] .hospital-overview-stat {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+    color: #475569;
 }
 
 html[data-theme="light"] .rating-stars-display .star:not(.filled):not(.half) {
