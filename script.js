@@ -827,7 +827,7 @@ function applyMedicheckTheme(theme) {
         metaTheme.setAttribute('content', t === 'light' ? '#f8fafc' : '#000000');
     }
 
-    const btn = document.getElementById('lhThemeToggle') || document.getElementById('themeToggle');
+    const btn = document.getElementById('themeToggle');
     if (btn) {
         btn.textContent = t === 'dark' ? '☀️' : '🌙';
         btn.title = t === 'dark' ? 'हल्की थीम पर जाएँ' : 'गहरी थीम पर जाएँ';
@@ -846,7 +846,7 @@ function initMedicheckTheme() {
         applyMedicheckTheme('light');
     }
 
-    const btn = document.getElementById('lhThemeToggle') || document.getElementById('themeToggle');
+    const btn = document.getElementById('themeToggle');
     if (btn) {
         btn.addEventListener('click', function () {
             const cur = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
@@ -2881,4 +2881,12 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     });
 });
 
-// Footer Go Top & Home — handled by site-chrome.js (lhFooterGoTop / lhFooterHome)
+document.getElementById('footerGoTop')?.addEventListener('click', function(e) {
+    e.preventDefault();
+    scrollToTop();
+});
+document.getElementById('footerHome')?.addEventListener('click', function(e) {
+    e.preventDefault();
+    scrollToTop();
+    goBackToHospitals();
+});
