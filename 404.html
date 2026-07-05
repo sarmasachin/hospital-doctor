@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="hi" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>404 — Page Not Found | LiveHospital</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/404.css">
+</head>
+<body>
+    <header class="nf-header">
+        <div class="nf-container">
+            <a href="/" class="nf-brand">
+                <img src="/favicon.svg" alt="LiveHospital" width="36" height="36">
+                <div>
+                    <h1>LiveHospital</h1>
+                    <p>Doctor Availability System</p>
+                </div>
+            </a>
+            <button type="button" class="nf-theme-btn" id="nfThemeToggle" aria-label="Theme toggle">🌙</button>
+        </div>
+    </header>
+
+    <main>
+        <section class="nf-hero">
+            <div class="nf-hero-inner nf-container">
+                <div class="nf-badge">🩺 LiveHospital</div>
+                <div class="nf-code">404</div>
+                <h2>यह पेज नहीं मिला</h2>
+                <p class="nf-sub">Page not found — लेकिन चिंता न करें! नीचे से आप जो खोज रहे थे, उससे जुड़े सही पेज खोल सकते हैं।</p>
+                <p class="nf-path" id="attemptedPath">/unknown</p>
+                <div class="nf-actions">
+                    <a href="/" class="nf-btn nf-btn-primary">🏠 होम पर जाएं</a>
+                    <a href="/contact" class="nf-btn nf-btn-secondary">📞 संपर्क करें</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="nf-section">
+            <div class="nf-container">
+                <h3>शायद आप ये ढूंढ रहे थे</h3>
+                <p class="nf-section-sub">आपके द्वारा खोले गए पते के आधार पर सुझाए गए लिंक</p>
+                <div id="relatedLinks" class="nf-grid"></div>
+            </div>
+        </section>
+
+        <section class="nf-section">
+            <div class="nf-container">
+                <h3>🏥 लोकप्रिय हॉस्पिटल</h3>
+                <p class="nf-section-sub">सीधे होम पेज पर जाकर डॉक्टर उपलब्धता देखें</p>
+                <div id="hospitalCards" class="nf-grid"></div>
+            </div>
+        </section>
+
+        <section class="nf-section">
+            <div class="nf-container">
+                <h3>🔍 हॉस्पिटल खोजें</h3>
+                <p class="nf-section-sub">नाम लिखें — होम पेज पर सर्च खुल जाएगी</p>
+                <form id="nfSearchForm" class="nf-search-box">
+                    <input type="text" id="nfSearchInput" placeholder="हॉस्पिटल का नाम खोजें..." autocomplete="off">
+                    <button type="submit">खोजें</button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <footer class="nf-footer">
+        <div class="nf-container">
+            <p>&copy; 2026 LiveHospital. सभी अधिकार सुरक्षित।</p>
+            <p>
+                <a href="/">Home</a>
+                <a href="/privacy">Privacy</a>
+                <a href="/terms">Terms</a>
+                <a href="/contact">Contact</a>
+            </p>
+        </div>
+    </footer>
+
+    <script src="/404.js"></script>
+</body>
+</html>

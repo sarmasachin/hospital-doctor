@@ -24,6 +24,7 @@ app.use(helmet({
 }));
 
 const PUBLIC_SITE_HOSTS = new Set(['livehospital.org', 'www.livehospital.org']);
+const ADMIN_PANEL_HOSTS = new Set(['panel.livehospital.org']);
 const ADMIN_PANEL_BASE_URL = String(process.env.ADMIN_PANEL_BASE_URL || 'https://panel.livehospital.org').replace(/\/$/, '');
 
 // Middleware
@@ -43,9 +44,8 @@ if (IS_PRODUCTION) {
         if (!PUBLIC_SITE_HOSTS.has(host)) return next();
         const p = req.path || '/';
         if (/^\/(admin|hospital-admin|blood-admin)(\.html)?\/?$/i.test(p)) {
-            const normalized = p.replace(/\/$/, '') || '/admin';
-            const withHtml = /\.html$/i.test(normalized) ? normalized : `${normalized}.html`;
-            return res.redirect(301, `${ADMIN_PANEL_BASE_URL}${withHtml}`);
+            const normalized = (p.replace(/\/$/, '') || '/admin').replace(/\.html$/i, '');
+            return res.redirect(301, `${ADMIN_PANEL_BASE_URL}${normalized}`);
         }
         return next();
     });
@@ -361,6 +361,11 @@ function formatScopedAdminRow(row) {
 // ============ ROOT ROUTE ============
 // Browser (HTML) → website; API clients (JSON) → API info
 app.get('/', (req, res) => {
+    const host = String(req.hostname || '').toLowerCase();
+    if (ADMIN_PANEL_HOSTS.has(host) && req.accepts('html')) {
+        res.sendFile(path.join(__dirname, '..', 'admin.html'));
+        return;
+    }
     if (req.accepts('html')) {
         res.sendFile(path.join(__dirname, '..', 'index.html'));
         return;
@@ -385,16 +390,24 @@ app.get('/', (req, res) => {
     });
 });
 
-// Serve admin & other HTML pages by path
+// Serve admin & other HTML pages by path (direct — no redirect)
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, '..', 'admin.html')));
 app.get('/hospital-admin', (req, res) => res.sendFile(path.join(__dirname, '..', 'hospital-admin.html')));
 app.get('/blood-admin', (req, res) => res.sendFile(path.join(__dirname, '..', 'blood-admin.html')));
+app.get('/admin.html', (req, res) => res.sendFile(path.join(__dirname, '..', 'admin.html')));
+app.get('/hospital-admin.html', (req, res) => res.sendFile(path.join(__dirname, '..', 'hospital-admin.html')));
+app.get('/blood-admin.html', (req, res) => res.sendFile(path.join(__dirname, '..', 'blood-admin.html')));
+app.get('/index.html', (req, res) => res.sendFile(path.join(__dirname, '..', 'index.html')));
 
 // Permalink-style URLs (user-friendly paths)
 app.get('/privacy', (req, res) => res.sendFile(path.join(__dirname, '..', 'privacy.html')));
 app.get('/terms', (req, res) => res.sendFile(path.join(__dirname, '..', 'terms.html')));
 app.get('/cookies', (req, res) => res.sendFile(path.join(__dirname, '..', 'cookies.html')));
 app.get('/contact', (req, res) => res.sendFile(path.join(__dirname, '..', 'contact.html')));
+app.get('/privacy.html', (req, res) => res.sendFile(path.join(__dirname, '..', 'privacy.html')));
+app.get('/terms.html', (req, res) => res.sendFile(path.join(__dirname, '..', 'terms.html')));
+app.get('/cookies.html', (req, res) => res.sendFile(path.join(__dirname, '..', 'cookies.html')));
+app.get('/contact.html', (req, res) => res.sendFile(path.join(__dirname, '..', 'contact.html')));
 
 app.get('/sitemap.xml', (req, res) => {
     const s = siteSettingsCache || loadSiteSettings();
@@ -1650,6 +1663,23 @@ app.post('/api/full-backup/import', authenticate, requireSuperAdmin, backupImpor
     } catch (e) {
         res.status(500).json({ error: e.message || 'Import failed' });
     }
+});
+
+// Custom 404 — attractive page with related site links
+app.use((req, res) => {
+    if (req.path.startsWith('/api/') || req.path === '/api') {
+        res.status(404).json({ error: 'Not found' });
+        return;
+    }
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+        res.status(404).send('Not found');
+        return;
+    }
+    if (req.accepts('html')) {
+        res.status(404).sendFile(path.join(__dirname, '..', '404.html'));
+        return;
+    }
+    res.status(404).send('Not found');
 });
 
 // Start server

@@ -657,6 +657,16 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Load data from API first
     await loadDataFromAPI();
+
+    const from404 = sessionStorage.getItem('lh404Search');
+    if (from404) {
+        sessionStorage.removeItem('lh404Search');
+        const searchInput404 = document.getElementById('searchInput');
+        if (searchInput404) {
+            searchInput404.value = from404;
+            searchHospitals();
+        }
+    }
     
     restoreSavedView();
     
