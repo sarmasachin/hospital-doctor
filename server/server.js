@@ -1636,6 +1636,42 @@ async function restoreDatabaseFromBackup(database) {
     await dbQuery('SET FOREIGN_KEY_CHECKS=1');
 }
 
+const DEMO_DATA_TABLES = ['doctor_feedback', 'hospital_ratings', 'blood_requests', 'doctors', 'hospitals', 'cities'];
+
+async function clearDemoDataFromDatabase() {
+    await dbQuery('SET FOREIGN_KEY_CHECKS=0');
+    for (const t of DEMO_DATA_TABLES) {
+        safeSqlIdent(t);
+        await dbQuery(`TRUNCATE TABLE \`${t}\``);
+    }
+    await dbQuery('SET FOREIGN_KEY_CHECKS=1');
+    const counts = {};
+    for (const t of DEMO_DATA_TABLES) {
+        const rows = await dbQuery(`SELECT COUNT(*) AS c FROM \`${t}\``);
+        counts[t] = Number(rows[0]?.c) || 0;
+    }
+    const adminRows = await dbQuery('SELECT COUNT(*) AS c FROM admins');
+    counts.admins_kept = Number(adminRows[0]?.c) || 0;
+    return counts;
+}
+
+app.post('/api/clear-demo-data', authenticate, requireSuperAdmin, async (req, res) => {
+    try {
+        if (req.body?.confirm !== 'CLEAR_DEMO_DATA') {
+            res.status(400).json({ error: 'Send { "confirm": "CLEAR_DEMO_DATA" } to proceed' });
+            return;
+        }
+        const counts = await clearDemoDataFromDatabase();
+        res.json({
+            ok: true,
+            message: 'Demo hospitals, doctors, blood requests and cities removed. Admin accounts kept.',
+            counts
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message || 'Clear failed' });
+    }
+});
+
 app.get('/api/full-backup/export', authenticate, requireSuperAdmin, async (req, res) => {
     try {
         const payload = await buildFullBackupPayload();

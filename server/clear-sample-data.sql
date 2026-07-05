@@ -1,5 +1,7 @@
 -- Run once on live server to remove sample/demo rows (keeps admin accounts).
--- mysql -u livehospital_user -p hospital_db < server/clear-sample-data.sql
+-- Option A: cd server && node clear-sample-data.js
+-- Option B: Admin panel → Site Settings → पूर्ण बैकअप → Demo Data Clear
+-- Option C: mysql -u livehospital_user -p hospital_db < server/clear-sample-data.sql
 
 USE hospital_db;
 

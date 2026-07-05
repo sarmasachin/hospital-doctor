@@ -2501,6 +2501,26 @@ async function saveSiteSettingsAdmin() {
     }
 }
 
+async function clearDemoDataFromDatabase() {
+    if (!window.confirm('सभी hospitals, doctors, blood requests और cities DELETE होंगे। Admin accounts safe रहेंगे। जारी रखें?')) return;
+    try {
+        const r = await authFetch(`${sameOriginApiBase()}/clear-demo-data`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ confirm: 'CLEAR_DEMO_DATA' })
+        });
+        let out = {};
+        try {
+            out = await r.json();
+        } catch (e) { /* ignore */ }
+        if (!r.ok) throw new Error(out.error || r.statusText || 'Clear failed');
+        showAlert(out.message || 'Demo data clear हो गया।', 'success');
+        if (typeof loadAllData === 'function') await loadAllData();
+    } catch (e) {
+        showFieldError('Demo data clear नहीं हो सका: ' + (e.message || String(e)));
+    }
+}
+
 async function downloadFullSiteBackup() {
     try {
         const r = await authFetch(`${sameOriginApiBase()}/full-backup/export`);

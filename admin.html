@@ -1547,6 +1547,11 @@
                         <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-bottom:20px;">
                             <button type="button" class="btn-submit" onclick="downloadFullSiteBackup()">⬇️ पूर्ण बैकअप डाउनलोड (JSON)</button>
                         </div>
+                        <div style="border:1px solid #7f1d1d;border-radius:10px;padding:16px;max-width:640px;background:#1c0f0f;margin-bottom:20px;">
+                            <h4 style="color:#fca5a5;margin:0 0 8px;">🗑️ Demo / Sample Data हटाएँ</h4>
+                            <p style="color:#9ca3af;margin:0 0 12px;font-size:.9rem;line-height:1.5;">सभी हॉस्पिटल, डॉक्टर, ब्लड रिक्वेस्ट और शहर MySQL से हट जाएँगे। <strong>Admin login safe रहेंगे।</strong> Live साइट पर पुराना dummy data दिख रहा हो तो एक बार चलाएँ।</p>
+                            <button type="button" class="btn-delete" onclick="clearDemoDataFromDatabase()" style="padding:10px 16px;">🗑️ Demo Data Clear करें</button>
+                        </div>
                         <div style="border:1px solid #252d38;border-radius:10px;padding:16px;max-width:640px;background:#111827;">
                             <label style="color:#e5e7eb;display:block;margin-bottom:8px;">बैकअप JSON फाइल चुनें (पहले यहीं से डाउनलोड की हुई)</label>
                             <input type="file" id="fullBackupFileInput" accept=".json,application/json" style="color:#9ca3af;margin-bottom:12px;">
