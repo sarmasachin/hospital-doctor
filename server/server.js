@@ -70,6 +70,14 @@ const forgotPasswordLimiter = rateLimit({
     message: { error: 'Too many OTP requests. Please try again in 15 minutes.' }
 });
 
+const contactSubmitLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'बहुत ज़्यादा संदेश भेजे गए। 15 मिनट बाद कोशिश करें।' }
+});
+
 const apiLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 150,
@@ -219,6 +227,7 @@ db.getConnection((err, connection) => {
     console.log('MySQL Connected Successfully!');
     connection.release();
     ensurePasswordResetTable();
+    ensureContactMessagesTable();
 });
 
 function ensurePasswordResetTable() {
@@ -235,6 +244,26 @@ function ensurePasswordResetTable() {
     )`;
     db.query(sql, (err) => {
         if (err) console.error('password_reset_otps table:', err.message);
+    });
+}
+
+function ensureContactMessagesTable() {
+    const sql = `CREATE TABLE IF NOT EXISTS contact_messages (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        mobile VARCHAR(20) NOT NULL,
+        email VARCHAR(255) NOT NULL,
+        subject VARCHAR(50) NOT NULL,
+        subject_text VARCHAR(255) DEFAULT NULL,
+        message TEXT NOT NULL,
+        status ENUM('pending', 'replied') NOT NULL DEFAULT 'pending',
+        reply TEXT DEFAULT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        replied_at TIMESTAMP NULL DEFAULT NULL,
+        INDEX idx_status_created (status, created_at)
+    )`;
+    db.query(sql, (err) => {
+        if (err) console.error('contact_messages table:', err.message);
     });
 }
 
@@ -1554,8 +1583,149 @@ app.put('/api/site-settings', authenticate, requireSuperAdmin, (req, res) => {
     }
 });
 
+function mapContactMessageRow(row) {
+    if (!row) return null;
+    return {
+        id: row.id,
+        name: row.name,
+        mobile: row.mobile,
+        email: row.email,
+        subject: row.subject,
+        subjectText: row.subject_text || row.subject,
+        message: row.message,
+        status: row.status || 'pending',
+        reply: row.reply || '',
+        createdAt: row.created_at,
+        repliedAt: row.replied_at
+    };
+}
+
+const CONTACT_SUBJECTS = new Set(['general', 'doctor', 'hospital', 'technical', 'suggestion', 'complaint']);
+
+app.post('/api/contact-messages', contactSubmitLimiter, (req, res) => {
+    const name = trimStr(req.body && req.body.name);
+    const mobile = trimStr(req.body && req.body.mobile).replace(/\D/g, '');
+    const email = trimStr(req.body && req.body.email);
+    const subject = trimStr(req.body && req.body.subject);
+    const subjectText = trimStr(req.body && req.body.subjectText) || subject;
+    const message = trimStr(req.body && req.body.message);
+
+    if (!name || name.length < 3) {
+        res.status(400).json({ error: 'कृपया अपना नाम लिखें (कम से कम 3 अक्षर)' });
+        return;
+    }
+    if (!mobile || mobile.length !== 10) {
+        res.status(400).json({ error: 'कृपया सही 10 अंकों का मोबाइल नंबर लिखें' });
+        return;
+    }
+    if (!email || !isValidEmail(email)) {
+        res.status(400).json({ error: 'कृपया सही ईमेल पता लिखें' });
+        return;
+    }
+    if (!subject || !CONTACT_SUBJECTS.has(subject)) {
+        res.status(400).json({ error: 'कृपया एक विषय चुनें' });
+        return;
+    }
+    if (!message || message.length < 10) {
+        res.status(400).json({ error: 'कृपया अपना संदेश लिखें (कम से कम 10 अक्षर)' });
+        return;
+    }
+
+    const query = `INSERT INTO contact_messages (name, mobile, email, subject, subject_text, message)
+        VALUES (?, ?, ?, ?, ?, ?)`;
+    db.query(query, [name, mobile, email, subject, subjectText, message], (err, result) => {
+        if (err) {
+            res.status(500).json({ error: 'संदेश सेव नहीं हो सका। बाद में दोबारा कोशिश करें।' });
+            return;
+        }
+        res.status(201).json({
+            success: true,
+            message: 'धन्यवाद! आपका संदेश भेज दिया गया है।',
+            id: result.insertId
+        });
+    });
+});
+
+app.get('/api/contact-messages', authenticate, requireSuperAdmin, (req, res) => {
+    db.query('SELECT * FROM contact_messages ORDER BY created_at DESC', (err, rows) => {
+        if (err) {
+            res.status(500).json({ error: 'संदेश लोड नहीं हो सके' });
+            return;
+        }
+        res.json((rows || []).map(mapContactMessageRow));
+    });
+});
+
+app.patch('/api/contact-messages/:id', authenticate, requireSuperAdmin, (req, res) => {
+    const id = parseInt(req.params.id, 10);
+    if (!id) {
+        res.status(400).json({ error: 'Invalid message id' });
+        return;
+    }
+    const status = trimStr(req.body && req.body.status);
+    const reply = trimStr(req.body && req.body.reply);
+    const updates = [];
+    const params = [];
+
+    if (status === 'pending' || status === 'replied') {
+        updates.push('status = ?');
+        params.push(status);
+    }
+    if (reply) {
+        updates.push('reply = ?');
+        params.push(reply);
+        if (!status) {
+            updates.push("status = 'replied'");
+        }
+        updates.push('replied_at = CURRENT_TIMESTAMP');
+    }
+
+    if (updates.length === 0) {
+        res.status(400).json({ error: 'Nothing to update' });
+        return;
+    }
+
+    params.push(id);
+    db.query(`UPDATE contact_messages SET ${updates.join(', ')} WHERE id = ?`, params, (err, result) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        if (!result.affectedRows) {
+            res.status(404).json({ error: 'Message not found' });
+            return;
+        }
+        db.query('SELECT * FROM contact_messages WHERE id = ?', [id], (selErr, rows) => {
+            if (selErr) {
+                res.json({ success: true });
+                return;
+            }
+            res.json({ success: true, message: mapContactMessageRow(rows[0]) });
+        });
+    });
+});
+
+app.delete('/api/contact-messages/:id', authenticate, requireSuperAdmin, (req, res) => {
+    const id = parseInt(req.params.id, 10);
+    if (!id) {
+        res.status(400).json({ error: 'Invalid message id' });
+        return;
+    }
+    db.query('DELETE FROM contact_messages WHERE id = ?', [id], (err, result) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        if (!result.affectedRows) {
+            res.status(404).json({ error: 'Message not found' });
+            return;
+        }
+        res.json({ success: true });
+    });
+});
+
 const DATA_DIR = path.join(__dirname, 'data');
-const TABLE_INSERT_ORDER = ['hospitals', 'cities', 'doctors', 'doctor_feedback', 'blood_requests', 'hospital_ratings', 'admins'];
+const TABLE_INSERT_ORDER = ['hospitals', 'cities', 'doctors', 'doctor_feedback', 'blood_requests', 'hospital_ratings', 'admins', 'contact_messages'];
 
 function safeJsonBasename(name) {
     const base = path.basename(name);
@@ -1710,6 +1880,36 @@ app.post('/api/full-backup/import', authenticate, requireSuperAdmin, backupImpor
     }
 });
 
+function sendServerError(req, res, err) {
+    if (res.headersSent) return;
+    console.error('[Server 500]', req.method, req.originalUrl || req.url, err && (err.stack || err));
+
+    const isApi = (req.path || '').startsWith('/api/') || req.path === '/api';
+    if (isApi) {
+        const payload = { error: 'Internal server error' };
+        if (!IS_PRODUCTION && err && err.message) {
+            payload.detail = err.message;
+        }
+        res.status(500).json(payload);
+        return;
+    }
+
+    if (req.method === 'GET' || req.method === 'HEAD') {
+        if (req.accepts('html')) {
+            res.status(500).sendFile(path.join(__dirname, '..', '500.html'));
+            return;
+        }
+    }
+
+    res.status(500).send('Internal server error');
+}
+
+// Global error handler — must be before 404 catch-all
+app.use((err, req, res, next) => {
+    if (!err) return next();
+    sendServerError(req, res, err);
+});
+
 // Custom 404 — attractive page with related site links
 app.use((req, res) => {
     if (req.path.startsWith('/api/') || req.path === '/api') {
@@ -1729,8 +1929,19 @@ app.use((req, res) => {
 
 // Start server
 const PORT = process.env.PORT || 5000;
+
+process.on('unhandledRejection', (reason) => {
+    console.error('[unhandledRejection]', reason);
+});
+
+process.on('uncaughtException', (err) => {
+    console.error('[uncaughtException]', err && (err.stack || err));
+});
+
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+    console.log(`NODE_ENV=${process.env.NODE_ENV || 'development'} | DB_USER=${process.env.DB_USER || '(empty)'} | DB_NAME=${process.env.DB_NAME || '(empty)'}`);
+    console.log(`Env file: ${envPath} (exists: ${envLoad.exists})`);
     console.log(`API available at http://localhost:${PORT}/api`);
     console.log('------------------------------------');
     console.log('Available Endpoints:');

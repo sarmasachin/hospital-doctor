@@ -1421,7 +1421,9 @@
                 loadDoctors();
             } catch (error) {
                 document.getElementById('loginError').style.display = 'block';
-                document.getElementById('loginError').textContent = 'सर्वर कनेक्शन विफल!';
+                document.getElementById('loginError').textContent = typeof getNetworkErrorMessage === 'function'
+                    ? getNetworkErrorMessage()
+                    : 'सर्वर कनेक्शन विफल!';
             }
         });
 
@@ -1438,12 +1440,17 @@
         async function loadDoctors() {
             try {
                 const response = await fetch(`${API_URL}/hospitals/${currentHospital.id}/doctors`);
+                if (!response.ok) {
+                    showAdminError(null, await getApiFailureMessage(response, 'डॉक्टर लोड नहीं हो सके'));
+                    return;
+                }
                 doctors = await response.json();
                 renderDoctors();
                 updateStats();
                 renderBulkList();
             } catch (error) {
                 console.error('Error loading doctors:', error);
+                showAdminError(error, 'डॉक्टर लोड नहीं हो सके');
             }
         }
 
@@ -1673,7 +1680,7 @@
                 }
                 alert(val ? 'लेबल सेव हो गया। आपके अस्पताल के कार्ड पर दिखेगा: ' + val : 'कार्ड लेबल हटा दिया गया');
             } catch (e) {
-                alert('Network error. Is server running?');
+                showAdminError(e, 'लेबल सेव नहीं हो सका');
             }
         }
         
@@ -1779,7 +1786,7 @@
                     showAlert('Failed to add doctor', 'error');
                 }
             } catch (error) {
-                showAlert('Server error', 'error');
+                showAdminError(error, 'डॉक्टर जोड़ा नहीं जा सका');
             }
         });
 
@@ -1797,7 +1804,7 @@
                     loadDoctors();
                 }
             } catch (error) {
-                showAlert('Update failed', 'error');
+                showAdminError(error, 'स्टेटस अपडेट नहीं हो सका');
             }
         }
 
@@ -1860,7 +1867,7 @@
                     loadDoctors();
                 }
             } catch (error) {
-                showAlert('Update failed', 'error');
+                showAdminError(error, 'स्टेटस अपडेट नहीं हो सका');
             }
         });
 
@@ -1875,7 +1882,7 @@
                     loadDoctors();
                 }
             } catch (error) {
-                showAlert('Delete failed', 'error');
+                showAdminError(error, 'हटाया नहीं जा सका');
             }
         }
 
@@ -1913,7 +1920,7 @@
                     loadDoctors();
                 }
             } catch (error) {
-                showAlert('अपडेट करने में समस्या हुई', 'error');
+                showAdminError(error, 'अपडेट करने में समस्या हुई');
             }
         }
 
@@ -1926,6 +1933,7 @@
         }
 
         // Initialize
+        if (typeof initAdminSessionExpiredNotice === 'function') initAdminSessionExpiredNotice();
         loadHospitalsForLogin();
     </script>
 </body>

@@ -17,7 +17,11 @@ module.exports = {
         instances: 1,
         autorestart: true,
         watch: false,
-        max_memory_restart: '300M',
+        min_uptime: '10s',
+        max_restarts: 15,
+        restart_delay: 5000,
+        exp_backoff_restart_delay: 2000,
+        max_memory_restart: '512M',
         env_production: {
             NODE_ENV: 'production',
             PORT: 5006,

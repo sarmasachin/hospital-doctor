@@ -12,21 +12,15 @@
     <meta name="robots" content="index, follow">
     <title>Terms & Conditions - LiveHospital</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="legal-pages.css">
+    <link rel="stylesheet" href="/legal-pages.css">
+    <link rel="stylesheet" href="/site-chrome.css">
+    <script src="/error-handler.js"></script>
+    <script src="/offline-status.js"></script>
     <script src="/contact-config.js"></script>
     <script src="/seo-bootstrap.js" defer></script>
 </head>
-<body>
-    <!-- Top Menu -->
-    <nav class="top-menu">
-        <div class="container">
-            <a href="index.html" class="menu-btn">🏠 Home</a>
-            <a href="privacy.html" class="menu-btn">🔒 गोपनीयता नीति</a>
-            <a href="terms.html" class="menu-btn active">📄 नियम और शर्तें</a>
-            <a href="cookies.html" class="menu-btn">🍪 कुकी नीति</a>
-            <a href="contact.html" class="menu-btn">📞 संपर्क करें</a>
-        </div>
-    </nav>
+<body data-active-page="terms">
+    <div id="lh-site-header"></div>
 
     <!-- Page Header -->
     <div class="page-header">
@@ -127,9 +121,8 @@
         });
     </script>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <p>&copy; 2026 LiveHospital. सभी अधिकार सुरक्षित।</p>
-    </footer>
+    <div id="lh-site-footer"></div>
+
+    <script src="/site-chrome.js"></script>
 </body>
 </html>

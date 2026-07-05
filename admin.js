@@ -98,6 +98,7 @@ function checkLoginState() {
 
 // Run on page load
 document.addEventListener('DOMContentLoaded', function() {
+    if (typeof initAdminSessionExpiredNotice === 'function') initAdminSessionExpiredNotice();
     checkLoginState();
 });
 
@@ -140,7 +141,9 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
         }
     } catch (error) {
         console.error('Login error:', error);
-        document.getElementById('loginError').textContent = 'Server connection failed!';
+        document.getElementById('loginError').textContent = typeof getNetworkErrorMessage === 'function'
+            ? getNetworkErrorMessage()
+            : 'सर्वर कनेक्शन विफल!';
         document.getElementById('loginError').style.display = 'block';
     }
 });
@@ -305,67 +308,99 @@ async function loadAllData() {
 async function loadHospitals() {
     try {
         const response = await authFetch(`${API_URL}/hospitals`);
+        if (!response.ok) {
+            showAdminError(null, await getApiFailureMessage(response, 'हॉस्पिटल लोड नहीं हो सके'));
+            return;
+        }
         hospitals = await response.json();
         renderHospitalsTable();
         populateHospitalDropdowns();
     } catch (error) {
         console.error('Error loading hospitals:', error);
+        showAdminError(error, 'हॉस्पिटल लोड नहीं हो सके');
     }
 }
 
 async function loadDoctors() {
     try {
         const response = await authFetch(`${API_URL}/doctors`);
+        if (!response.ok) {
+            showAdminError(null, await getApiFailureMessage(response, 'डॉक्टर लोड नहीं हो सके'));
+            return;
+        }
         doctors = await response.json();
         renderDoctorsTable();
     } catch (error) {
         console.error('Error loading doctors:', error);
+        showAdminError(error, 'डॉक्टर लोड नहीं हो सके');
     }
 }
 
 async function loadBloodRequests() {
     try {
         const response = await authFetch(`${API_URL}/blood-requests`);
+        if (!response.ok) {
+            showAdminError(null, await getApiFailureMessage(response, 'ब्लड रिक्वेस्ट लोड नहीं हो सके'));
+            return;
+        }
         bloodRequests = await response.json();
         renderBloodTable();
     } catch (error) {
         console.error('Error loading blood requests:', error);
+        showAdminError(error, 'ब्लड रिक्वेस्ट लोड नहीं हो सके');
     }
 }
 
 async function loadAdmins() {
     try {
         const response = await authFetch(`${API_URL}/admins`);
+        if (!response.ok) {
+            showAdminError(null, await getApiFailureMessage(response, 'एडमिन लोड नहीं हो सके'));
+            return;
+        }
         admins = await response.json();
         renderAdminsTable();
     } catch (error) {
         console.error('Error loading admins:', error);
+        showAdminError(error, 'एडमिन लोड नहीं हो सके');
     }
 }
 
 async function loadHospitalAdmins() {
     try {
         const response = await authFetch(`${API_URL}/hospital-admins`);
-        if (!response.ok) throw new Error('Failed to load hospital admins');
+        if (!response.ok) {
+            showAdminError(null, await getApiFailureMessage(response, 'हॉस्पिटल एडमिन लोड नहीं हो सके'));
+            hospitalAdmins = [];
+            renderHospitalAdminsTable();
+            return;
+        }
         hospitalAdmins = await response.json();
         renderHospitalAdminsTable();
     } catch (error) {
         console.error('Error loading hospital admins:', error);
         hospitalAdmins = [];
         renderHospitalAdminsTable();
+        showAdminError(error, 'हॉस्पिटल एडमिन लोड नहीं हो सके');
     }
 }
 
 async function loadBloodAdmins() {
     try {
         const response = await authFetch(`${API_URL}/blood-admins`);
-        if (!response.ok) throw new Error('Failed to load blood admins');
+        if (!response.ok) {
+            showAdminError(null, await getApiFailureMessage(response, 'ब्लड एडमिन लोड नहीं हो सके'));
+            bloodAdmins = [];
+            renderBloodAdminsTable();
+            return;
+        }
         bloodAdmins = await response.json();
         renderBloodAdminsTable();
     } catch (error) {
         console.error('Error loading blood admins:', error);
         bloodAdmins = [];
         renderBloodAdminsTable();
+        showAdminError(error, 'ब्लड एडमिन लोड नहीं हो सके');
     }
 }
 
@@ -385,6 +420,7 @@ function loadCities() {
 async function loadStats() {
     try {
         const response = await authFetch(`${API_URL}/stats`);
+        if (!response.ok) return;
         const stats = await response.json();
         
         document.getElementById('statHospitals').textContent = stats.hospitals || 0;
@@ -395,6 +431,7 @@ async function loadStats() {
         document.getElementById('statAdmins').textContent = admins.length || 0;
     } catch (error) {
         console.error('Error loading stats:', error);
+        showAdminError(error, 'आँकड़े लोड नहीं हो सके');
     }
 }
 
@@ -832,10 +869,10 @@ document.getElementById('hospitalForm').addEventListener('submit', async functio
             await loadHospitals();
             await loadStats();
         } else {
-            showAlert(isEdit ? 'Failed to update hospital' : 'Failed to add hospital', 'error');
+            showAlert(await getApiFailureMessage(response, isEdit ? 'हॉस्पिटल अपडेट नहीं हो सका' : 'हॉस्पिटल जोड़ा नहीं जा सका'), 'error');
         }
     } catch (error) {
-        showAlert('Server error', 'error');
+        showAdminError(error);
     }
 });
 
@@ -887,10 +924,10 @@ document.getElementById('doctorForm').addEventListener('submit', async function(
             await loadDoctors();
             await loadStats();
         } else {
-            showAlert('Failed to add doctor', 'error');
+            showAlert(await getApiFailureMessage(response, 'डॉक्टर जोड़ा नहीं जा सका'), 'error');
         }
     } catch (error) {
-        showAlert('Server error', 'error');
+        showAdminError(error);
     }
 });
 
@@ -936,10 +973,10 @@ document.getElementById('bloodForm').addEventListener('submit', async function(e
             await loadBloodRequests();
             await loadStats();
         } else {
-            showAlert('Failed to add blood request', 'error');
+            showAlert(await getApiFailureMessage(response, 'ब्लड रिक्वेस्ट जोड़ी नहीं जा सकी'), 'error');
         }
     } catch (error) {
-        showAlert('Server error', 'error');
+        showAdminError(error);
     }
 });
 
@@ -965,10 +1002,10 @@ document.getElementById('adminForm').addEventListener('submit', async function(e
             closeModal('admin');
             await loadAdmins();
         } else {
-            showAlert('Failed to add admin', 'error');
+            showAlert(await getApiFailureMessage(response, 'एडमिन जोड़ा नहीं जा सका'), 'error');
         }
     } catch (error) {
-        showAlert('Server error', 'error');
+        showAdminError(error);
     }
 });
 
@@ -1018,7 +1055,7 @@ document.getElementById('hospitalAdminForm').addEventListener('submit', async fu
         renderHospitalAdminsTable();
         updateHospitalAdminStats();
     } catch (error) {
-        showAlert('Server error', 'error');
+        showAdminError(error);
     }
 });
 
@@ -1068,7 +1105,7 @@ document.getElementById('bloodAdminForm').addEventListener('submit', async funct
         renderBloodAdminsTable();
         updateBloodAdminStats();
     } catch (error) {
-        showAlert('Server error', 'error');
+        showAdminError(error);
     }
 });
 
@@ -1119,7 +1156,7 @@ async function deleteHospital(id) {
             await loadStats();
         }
     } catch (error) {
-        showAlert('Delete failed', 'error');
+        showAdminError(error, 'हटाया नहीं जा सका');
     }
 }
 
@@ -1134,7 +1171,7 @@ async function deleteDoctor(id) {
             await loadStats();
         }
     } catch (error) {
-        showAlert('Delete failed', 'error');
+        showAdminError(error, 'हटाया नहीं जा सका');
     }
 }
 
@@ -1149,7 +1186,7 @@ async function deleteBloodRequest(id) {
             await loadStats();
         }
     } catch (error) {
-        showAlert('Delete failed', 'error');
+        showAdminError(error, 'हटाया नहीं जा सका');
     }
 }
 
@@ -1163,7 +1200,7 @@ async function deleteAdmin(id) {
             await loadAdmins();
         }
     } catch (error) {
-        showAlert('Delete failed', 'error');
+        showAdminError(error, 'हटाया नहीं जा सका');
     }
 }
 
@@ -1202,7 +1239,7 @@ async function deleteHospitalAdmin(id) {
         updateHospitalAdminStats();
         showAlert('Hospital Admin deleted!', 'success');
     } catch (error) {
-        showAlert('Server error', 'error');
+        showAdminError(error);
     }
 }
 
@@ -1248,7 +1285,7 @@ async function deleteBloodAdmin(id) {
         updateBloodAdminStats();
         showAlert('Blood Admin deleted!', 'success');
     } catch (error) {
-        showAlert('Server error', 'error');
+        showAdminError(error);
     }
 }
 
@@ -1406,7 +1443,7 @@ async function saveHospitalCardLabel() {
         if (h) h.card_branding = val || null;
         showAlert(val ? 'लेबल सेव हो गया। कार्ड पर दिखेगा: ' + val : 'इस हॉस्पिटल का कार्ड लेबल हटा दिया गया', 'success');
     } catch (e) {
-        showAlert('Network error. Is server running?', 'error');
+        showAdminError(e, 'लेबल सेव नहीं हो सका');
     }
 }
 
@@ -1713,8 +1750,33 @@ function addActivity(action, details) {
 // ==================== CONTACT MESSAGES MANAGEMENT ====================
 
 // Load contact messages
-function loadContactMessages() {
-    contactMessages = JSON.parse(localStorage.getItem('contactMessages') || '[]');
+function loadContactMessagesFromStorage() {
+    try {
+        contactMessages = JSON.parse(localStorage.getItem('contactMessages') || '[]');
+        if (!Array.isArray(contactMessages)) contactMessages = [];
+    } catch (_) {
+        contactMessages = [];
+    }
+}
+
+async function loadContactMessages() {
+    try {
+        const response = await authFetch(`${API_URL}/contact-messages`);
+        if (!response.ok) {
+            loadContactMessagesFromStorage();
+            showAdminError(null, await getApiFailureMessage(response, 'संदेश लोड नहीं हो सके (स्थानीय बैकअप दिख रहा है)'));
+            filteredContactMessages = [...contactMessages];
+            renderContactMessagesTable();
+            updateContactMessageStats();
+            return;
+        }
+        contactMessages = await response.json();
+        if (!Array.isArray(contactMessages)) contactMessages = [];
+    } catch (error) {
+        console.error('Error loading contact messages:', error);
+        loadContactMessagesFromStorage();
+        showAdminError(error, 'संदेश लोड नहीं हो सके (स्थानीय बैकअप दिख रहा है)');
+    }
     filteredContactMessages = [...contactMessages];
     renderContactMessagesTable();
     updateContactMessageStats();
@@ -1891,20 +1953,33 @@ function closeContactMessageModal() {
 }
 
 // Delete contact message
-function deleteContactMessage(id) {
+async function deleteContactMessage(id) {
     if (!confirm('क्या आप इस message को delete करना चाहते हैं?')) return;
-    
-    contactMessages = contactMessages.filter(m => m.id !== id);
-    localStorage.setItem('contactMessages', JSON.stringify(contactMessages));
-    
-    filteredContactMessages = filteredContactMessages.filter(m => m.id !== id);
-    renderContactMessagesTable();
-    updateContactMessageStats();
-    showAlert('Message deleted!', 'success');
+
+    try {
+        const response = await authFetch(`${API_URL}/contact-messages/${id}`, { method: 'DELETE' });
+        if (!response.ok) {
+            const msg = await getApiFailureMessage(response, 'संदेश हटाया नहीं जा सका');
+            showAlert(msg, 'error');
+            return;
+        }
+        contactMessages = contactMessages.filter(m => m.id !== id);
+        filteredContactMessages = filteredContactMessages.filter(m => m.id !== id);
+        renderContactMessagesTable();
+        updateContactMessageStats();
+        showAlert('Message deleted!', 'success');
+    } catch (error) {
+        contactMessages = contactMessages.filter(m => m.id !== id);
+        filteredContactMessages = filteredContactMessages.filter(m => m.id !== id);
+        localStorage.setItem('contactMessages', JSON.stringify(contactMessages.filter(m => m._localOnly)));
+        renderContactMessagesTable();
+        updateContactMessageStats();
+        showAdminError(error, 'संदेश हटाया नहीं जा सका');
+    }
 }
 
 // Reply form submission
-document.getElementById('replyForm').addEventListener('submit', function(e) {
+document.getElementById('replyForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
     const messageId = parseInt(document.getElementById('replyMessageId').value);
@@ -1915,29 +1990,36 @@ document.getElementById('replyForm').addEventListener('submit', function(e) {
         return;
     }
     
-    // Find and update the message
     const messageIndex = contactMessages.findIndex(m => m.id === messageId);
     if (messageIndex === -1) return;
     
     const message = contactMessages[messageIndex];
+
+    try {
+        const response = await authFetch(`${API_URL}/contact-messages/${messageId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'replied', reply: replyText })
+        });
+        if (!response.ok) {
+            showAlert(await getApiFailureMessage(response, 'रिप्लाई सेव नहीं हो सका'), 'error');
+            return;
+        }
+    } catch (error) {
+        showAdminError(error, 'रिप्लाई सेव नहीं हो सका');
+        return;
+    }
     
-    // Update message status
     contactMessages[messageIndex].status = 'replied';
     contactMessages[messageIndex].reply = replyText;
     contactMessages[messageIndex].repliedAt = new Date().toISOString();
     
-    // Save to localStorage
-    localStorage.setItem('contactMessages', JSON.stringify(contactMessages));
-    
-    // Open Gmail compose window with pre-filled data
     const subject = encodeURIComponent(`Re: ${message.subjectText || message.subject} - LiveHospital Support`);
     const body = encodeURIComponent(`प्रिय ${message.name},\n\n${replyText}\n\n---\nआपका मूल संदेश:\n"${message.message}"\n\n---\nधन्यवाद,\nLiveHospital Support Team`);
     const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${message.email}&su=${subject}&body=${body}`;
     
-    // Open Gmail in new tab
     window.open(gmailUrl, '_blank');
     
-    // Update UI
     closeContactMessageModal();
     filteredContactMessages = [...contactMessages];
     renderContactMessagesTable();

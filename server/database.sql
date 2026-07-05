@@ -98,6 +98,22 @@ CREATE TABLE IF NOT EXISTS cities (
     UNIQUE KEY (value)
 );
 
+-- Contact form messages (public site → admin panel)
+CREATE TABLE IF NOT EXISTS contact_messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    mobile VARCHAR(20) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    subject VARCHAR(50) NOT NULL,
+    subject_text VARCHAR(255) DEFAULT NULL,
+    message TEXT NOT NULL,
+    status ENUM('pending', 'replied') NOT NULL DEFAULT 'pending',
+    reply TEXT DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    replied_at TIMESTAMP NULL DEFAULT NULL,
+    INDEX idx_status_created (status, created_at)
+);
+
 -- Production: no sample hospitals/doctors/blood/cities here.
 -- Add real data via Admin panel after deploy.
 -- Super admin: cd server && node setup-security.js

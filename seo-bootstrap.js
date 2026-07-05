@@ -107,7 +107,7 @@
 
     fetch('/api/site-settings', { credentials: 'same-origin' })
         .then(function (r) {
-            if (!r.ok) throw new Error('settings');
+            if (!r.ok) throw new Error('settings_http_' + r.status);
             return r.json();
         })
         .then(function (data) {
@@ -142,10 +142,21 @@
                 window.applySiteContact(data.contact);
             }
         })
-        .catch(function () {
+        .catch(function (err) {
             if (typeof window.applySiteContact === 'function') {
                 window.applySiteContact(window.DEFAULT_CONTACT);
             }
+            var isLegalOrContact = key === 'privacy' || key === 'terms' || key === 'cookies' || key === 'contact' || key === 'home';
+            if (isLegalOrContact && typeof window.showPageNotice === 'function') {
+                var status = err && String(err.message || '').match(/settings_http_(\d+)/);
+                var msg = status && parseInt(status[1], 10) >= 500
+                    ? 'सर्वर से सेटिंग लोड नहीं हो पाईं। डिफ़ॉल्ट जानकारी दिख रही है।'
+                    : 'साइट सेटिंग लोड नहीं हो पाईं। डिफ़ॉल्ट संपर्क जानकारी दिख रही है।';
+                window.showPageNotice(msg, { icon: 'ℹ️ ', dismissible: true });
+            }
+            try {
+                console.warn('[LiveHospital] site-settings load failed:', err);
+            } catch (_) { /* ignore */ }
         });
 })();
 

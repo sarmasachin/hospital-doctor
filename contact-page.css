@@ -180,6 +180,13 @@
     color: #15803d;
 }
 
+.form-alert.info {
+    display: block;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid #93c5fd;
+    color: #1d4ed8;
+}
+
 .btn-submit {
     background: #16a34a;
     color: #ffffff;
@@ -197,6 +204,11 @@
 
 .btn-submit:hover {
     background: #15803d;
+}
+
+.btn-submit:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
 }
 
 .faq-section {

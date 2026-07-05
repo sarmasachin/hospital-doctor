@@ -1149,7 +1149,9 @@
                 loadBloodRequests();
             } catch (error) {
                 document.getElementById('loginError').style.display = 'block';
-                document.getElementById('loginError').textContent = 'सर्वर कनेक्शन विफल!';
+                document.getElementById('loginError').textContent = typeof getNetworkErrorMessage === 'function'
+                    ? getNetworkErrorMessage()
+                    : 'सर्वर कनेक्शन विफल!';
             }
         });
 
@@ -1166,11 +1168,16 @@
         async function loadBloodRequests() {
             try {
                 const response = await fetch(`${API_URL}/hospitals/${currentHospital.id}/blood-requests`);
+                if (!response.ok) {
+                    showAdminError(null, await getApiFailureMessage(response, 'ब्लड रिक्वेस्ट लोड नहीं हो सके'));
+                    return;
+                }
                 bloodRequests = await response.json();
                 renderRequests();
                 renderStats();
             } catch (error) {
                 console.error('Error loading blood requests:', error);
+                showAdminError(error, 'ब्लड रिक्वेस्ट लोड नहीं हो सके');
             }
         }
 
@@ -1326,7 +1333,7 @@
                     showAlert('Failed to add request', 'error');
                 }
             } catch (error) {
-                showAlert('Server error', 'error');
+                showAdminError(error, 'ब्लड रिक्वेस्ट जोड़ी नहीं जा सकी');
             }
         });
 
@@ -1341,7 +1348,7 @@
                     loadBloodRequests();
                 }
             } catch (error) {
-                showAlert('Delete failed', 'error');
+                showAdminError(error, 'हटाया नहीं जा सका');
             }
         }
 
@@ -1354,6 +1361,7 @@
         }
 
         // Initialize
+        if (typeof initAdminSessionExpiredNotice === 'function') initAdminSessionExpiredNotice();
         loadHospitalsForLogin();
 
         // Auto refresh every 5 minutes

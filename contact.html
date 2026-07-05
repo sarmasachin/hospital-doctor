@@ -10,24 +10,18 @@
     <meta name="theme-color" content="#f8fafc">
     <title>Contact / Support - LiveHospital</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="legal-pages.css">
-    <link rel="stylesheet" href="contact-page.css">
+    <link rel="stylesheet" href="/legal-pages.css">
+    <link rel="stylesheet" href="/contact-page.css">
+    <link rel="stylesheet" href="/site-chrome.css">
     <meta name="description" content="LiveHospital संपर्क व सहायता।">
     <meta name="robots" content="index, follow">
+    <script src="/error-handler.js"></script>
+    <script src="/offline-status.js"></script>
     <script src="/contact-config.js"></script>
     <script src="/seo-bootstrap.js" defer></script>
 </head>
-<body>
-    <!-- Top Menu -->
-    <nav class="top-menu">
-        <div class="container">
-            <a href="index.html" class="menu-btn">🏠 Home</a>
-            <a href="privacy.html" class="menu-btn">🔒 गोपनीयता नीति</a>
-            <a href="terms.html" class="menu-btn">📄 नियम और शर्तें</a>
-            <a href="cookies.html" class="menu-btn">🍪 कुकी नीति</a>
-            <a href="contact.html" class="menu-btn active">📞 संपर्क करें</a>
-        </div>
-    </nav>
+<body data-active-page="contact">
+    <div id="lh-site-header"></div>
 
     <!-- Page Header -->
     <div class="page-header">
@@ -149,160 +143,9 @@
         </div>
     </div>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <p>&copy; 2026 LiveHospital. सभी अधिकार सुरक्षित।</p>
-    </footer>
+    <div id="lh-site-footer"></div>
 
-    <script>
-        // Form elements
-        const form = document.getElementById('contactForm');
-        const formAlert = document.getElementById('formAlert');
-        
-        const nameInput = document.getElementById('nameInput');
-        const mobileInput = document.getElementById('mobileInput');
-        const emailInput = document.getElementById('emailInput');
-        const subjectInput = document.getElementById('subjectInput');
-        const messageInput = document.getElementById('messageInput');
-        
-        const nameGroup = document.getElementById('nameGroup');
-        const mobileGroup = document.getElementById('mobileGroup');
-        const emailGroup = document.getElementById('emailGroup');
-        const subjectGroup = document.getElementById('subjectGroup');
-        const messageGroup = document.getElementById('messageGroup');
-
-        // Validation functions
-        function validateName() {
-            const value = nameInput.value.trim();
-            if (value.length < 3) {
-                nameGroup.classList.add('error');
-                nameGroup.classList.remove('success');
-                return false;
-            }
-            nameGroup.classList.remove('error');
-            nameGroup.classList.add('success');
-            return true;
-        }
-
-        function validateMobile() {
-            const value = mobileInput.value.trim().replace(/\D/g, '');
-            if (value.length !== 10) {
-                mobileGroup.classList.add('error');
-                mobileGroup.classList.remove('success');
-                return false;
-            }
-            mobileGroup.classList.remove('error');
-            mobileGroup.classList.add('success');
-            return true;
-        }
-
-        function validateEmail() {
-            const value = emailInput.value.trim();
-            if (value === '') {
-                emailGroup.classList.add('error');
-                emailGroup.classList.remove('success');
-                return false; // Email is required
-            }
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(value)) {
-                emailGroup.classList.add('error');
-                emailGroup.classList.remove('success');
-                return false;
-            }
-            emailGroup.classList.remove('error');
-            emailGroup.classList.add('success');
-            return true;
-        }
-
-        function validateSubject() {
-            const value = subjectInput.value;
-            if (value === '') {
-                subjectGroup.classList.add('error');
-                subjectGroup.classList.remove('success');
-                return false;
-            }
-            subjectGroup.classList.remove('error');
-            subjectGroup.classList.add('success');
-            return true;
-        }
-
-        function validateMessage() {
-            const value = messageInput.value.trim();
-            if (value.length < 10) {
-                messageGroup.classList.add('error');
-                messageGroup.classList.remove('success');
-                return false;
-            }
-            messageGroup.classList.remove('error');
-            messageGroup.classList.add('success');
-            return true;
-        }
-
-        // Show alert
-        function showFormAlert(type, message) {
-            formAlert.textContent = message;
-            formAlert.className = 'form-alert ' + type;
-        }
-
-        // Hide alert
-        function hideFormAlert() {
-            formAlert.className = 'form-alert';
-        }
-
-        // Real-time validation on input
-        nameInput.addEventListener('input', validateName);
-        mobileInput.addEventListener('input', validateMobile);
-        emailInput.addEventListener('input', validateEmail);
-        subjectInput.addEventListener('change', validateSubject);
-        messageInput.addEventListener('input', validateMessage);
-
-        // Form submit
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // Validate all fields
-            const isNameValid = validateName();
-            const isMobileValid = validateMobile();
-            const isEmailValid = validateEmail();
-            const isSubjectValid = validateSubject();
-            const isMessageValid = validateMessage();
-
-            // Check if all valid
-            if (isNameValid && isMobileValid && isEmailValid && isSubjectValid && isMessageValid) {
-                // Save to localStorage for admin dashboard
-                const contactMessages = JSON.parse(localStorage.getItem('contactMessages') || '[]');
-                const newMessage = {
-                    id: contactMessages.length > 0 ? Math.max(...contactMessages.map(m => m.id)) + 1 : 1,
-                    name: nameInput.value.trim(),
-                    mobile: mobileInput.value.trim(),
-                    email: emailInput.value.trim(),
-                    subject: subjectInput.value,
-                    subjectText: subjectInput.options[subjectInput.selectedIndex].text,
-                    message: messageInput.value.trim(),
-                    status: 'pending',
-                    reply: '',
-                    createdAt: new Date().toISOString(),
-                    repliedAt: null
-                };
-                contactMessages.push(newMessage);
-                localStorage.setItem('contactMessages', JSON.stringify(contactMessages));
-                
-                showFormAlert('success', '✅ धन्यवाद! आपका संदेश भेज दिया गया है। हम जल्द ही संपर्क करेंगे।');
-                form.reset();
-                
-                // Remove success classes
-                nameGroup.classList.remove('success');
-                mobileGroup.classList.remove('success');
-                emailGroup.classList.remove('success');
-                subjectGroup.classList.remove('success');
-                messageGroup.classList.remove('success');
-                
-                // Hide alert after 5 seconds
-                setTimeout(hideFormAlert, 5000);
-            } else {
-                showFormAlert('error', '⚠️ कृपया सभी आवश्यक फ़ील्ड सही से भरें');
-            }
-        });
-    </script>
+    <script src="/site-chrome.js"></script>
+    <script src="/contact-page.js"></script>
 </body>
 </html>

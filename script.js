@@ -68,6 +68,8 @@ let currentPaginationType = 'hospitals'; // hospitals, doctors, blood
 
 // Data Loading State
 let isLoading = false;
+let dataLoadFailed = false;
+let lastDataLoadError = null;
 
 
 // ==================== TOAST/MESSAGE SYSTEM ====================
@@ -277,37 +279,90 @@ function applyEffectiveDoctorStatuses(hospitals, now = new Date()) {
 
 // ==================== API FUNCTIONS ====================
 
-// Fetch all hospitals with their doctors
-async function fetchHospitals() {
-    try {
-        const response = await fetch(`${API_URL}/hospitals`);
-        if (!response.ok) {
-            throw new Error(`Server returned ${response.status}`);
-        }
-        const hospitals = await response.json();
-        
-        // Fetch doctors for each hospital
-        for (let hospital of hospitals) {
-            const doctorsResponse = await fetch(`${API_URL}/hospitals/${hospital.id}/doctors`);
-            hospital.doctors = doctorsResponse.ok ? await doctorsResponse.json() : [];
-        }
-        
-        return hospitals;
-    } catch (error) {
-        console.error('Error fetching hospitals:', error);
-        showError('Connection Error', 'Server से connect नहीं हो पा रहा');
-        return [];
+function getDataLoadErrorMessage(error) {
+    if (!error) return 'डेटा लोड नहीं हो पाया। कृपया दोबारा कोशिश करें।';
+    if (error.name === 'TypeError' || /failed to fetch|network|load failed/i.test(String(error.message || ''))) {
+        return 'इंटरनेट कनेक्शन या सर्वर उपलब्ध नहीं है। कनेक्शन चेक करके दोबारा कोशिश करें।';
     }
+    const status = error.status;
+    if (status === 503) return 'साइट मेंटेनेंस में है। थोड़ी देर बाद दोबारा कोशिश करें।';
+    if (status >= 500) return 'सर्वर पर अस्थायी समस्या है। कुछ देर बाद दोबारा कोशिश करें।';
+    if (status === 404) return 'डेटा API नहीं मिली। सर्वर सेटअप जाँचें या सपोर्ट से संपर्क करें।';
+    return 'डेटा लोड नहीं हो पाया। कृपया दोबारा कोशिश करें।';
 }
 
-// Fetch blood requests
-async function fetchBloodRequests() {
+function showDataLoadErrorCard(error) {
+    if (error) lastDataLoadError = error;
+    dataLoadFailed = true;
+    const grid = document.getElementById('hospitalsGrid');
+    if (!grid) return;
+    const message = getDataLoadErrorMessage(lastDataLoadError);
+    grid.innerHTML = `
+        <div class="data-load-error-wrap" role="alert" aria-live="assertive">
+            <div class="connection-error data-load-error">
+                <h3>⚠️ डेटा लोड नहीं हो पाया</h3>
+                <p>${escapeHtml(message)}</p>
+                <button type="button" class="btn-retry" id="retryDataLoadBtn" onclick="retryDataLoad()">
+                    🔄 दोबारा कोशिश करें
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function clearDataLoadErrorState() {
+    dataLoadFailed = false;
+    lastDataLoadError = null;
+}
+
+// Fetch hospitals + doctors (throws on critical failure — empty list is valid success)
+async function fetchHospitalsFromAPI() {
+    const response = await fetch(`${API_URL}/hospitals`);
+    if (!response.ok) {
+        const err = new Error(`Server returned ${response.status}`);
+        err.status = response.status;
+        throw err;
+    }
+    let hospitals;
+    try {
+        hospitals = await response.json();
+    } catch (_) {
+        const err = new Error('Invalid server response');
+        err.status = response.status;
+        throw err;
+    }
+    if (!Array.isArray(hospitals)) {
+        const err = new Error('Invalid hospitals data');
+        err.status = response.status;
+        throw err;
+    }
+
+    await Promise.all(hospitals.map(async (hospital) => {
+        try {
+            const doctorsResponse = await fetch(`${API_URL}/hospitals/${hospital.id}/doctors`);
+            if (doctorsResponse.ok) {
+                const doctors = await doctorsResponse.json();
+                hospital.doctors = Array.isArray(doctors) ? doctors : [];
+            } else {
+                hospital.doctors = [];
+            }
+        } catch (_) {
+            hospital.doctors = [];
+        }
+    }));
+
+    return hospitals;
+}
+
+// Fetch blood requests (non-critical — returns [] on failure)
+async function fetchBloodRequestsFromAPI() {
     try {
         const response = await fetch(`${API_URL}/blood-requests`);
         if (!response.ok) {
             throw new Error(`Server returned ${response.status}`);
         }
         const data = await response.json();
+        if (!Array.isArray(data)) return [];
         
         // Convert API data to frontend format
         return data.map(req => ({
@@ -330,34 +385,57 @@ async function fetchBloodRequests() {
 
 // Load all data from API
 async function loadDataFromAPI() {
+    if (isLoading) return false;
     isLoading = true;
     showLoadingState();
-    
+
     try {
-        // Fetch hospitals and blood requests
-        const [hospitals, blood] = await Promise.all([
-            fetchHospitals(),
-            fetchBloodRequests()
-        ]);
-        
+        const hospitals = await fetchHospitalsFromAPI();
+        const blood = await fetchBloodRequestsFromAPI();
+
         hospitalsData = hospitals;
         bloodRequests = blood;
         snapshotDoctorDbStatuses(hospitalsData);
         applyEffectiveDoctorStatuses(hospitalsData);
         lastDataRefreshTime = Date.now();
-        
+        clearDataLoadErrorState();
+
         console.log('Data loaded from API:', {
             hospitals: hospitalsData.length,
             bloodRequests: bloodRequests.length
         });
-        
-        isLoading = false;
+
         return true;
     } catch (error) {
         console.error('Error loading data:', error);
-        isLoading = false;
-        showError('Data Load Error', 'डेटा लोड करने में समस्या आई। कृपया बाद में फिर से try करें।');
+        hospitalsData = [];
+        bloodRequests = [];
+        showDataLoadErrorCard(error);
         return false;
+    } finally {
+        isLoading = false;
+    }
+}
+
+// Retry button handler (Step 1 — safe reload)
+async function retryDataLoad() {
+    if (isLoading) return;
+    const btn = document.getElementById('retryDataLoadBtn');
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⏳ लोड हो रहा है...';
+    }
+
+    const ok = await loadDataFromAPI();
+    if (ok) {
+        restoreSavedView();
+        showSuccess('कनेक्ट हो गया', 'डेटा सफलतापूर्वक लोड हो गया।');
+        return;
+    }
+
+    if (btn) {
+        btn.disabled = false;
+        btn.textContent = '🔄 दोबारा कोशिश करें';
     }
 }
 
@@ -368,7 +446,7 @@ function showLoadingState() {
         grid.innerHTML = `
             <div class="loading-state">
                 <div class="loading-spinner"></div>
-                <p>Loading data...</p>
+                <p>डेटा लोड हो रहा है...</p>
             </div>
         `;
     }
@@ -377,10 +455,14 @@ function showLoadingState() {
 // Refresh data from API
 async function refreshData() {
     showInfo('Refreshing', 'Data refresh हो रहा है...');
-    await loadDataFromAPI();
-    renderPage();
-    showSuccess('Updated', 'Data successfully updated!');
+    const ok = await loadDataFromAPI();
+    if (ok) {
+        restoreSavedView();
+        showSuccess('Updated', 'Data successfully updated!');
+    }
 }
+
+window.retryDataLoad = retryDataLoad;
 
 // 24 hours in milliseconds
 const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
@@ -590,6 +672,10 @@ function parseSavedView() {
 }
 
 function applySavedView(view) {
+    if (dataLoadFailed) {
+        showDataLoadErrorCard();
+        return;
+    }
     if (!view || !view.type) {
         renderPage();
         return;
@@ -741,7 +827,7 @@ function applyMedicheckTheme(theme) {
         metaTheme.setAttribute('content', t === 'light' ? '#f8fafc' : '#000000');
     }
 
-    const btn = document.getElementById('themeToggle');
+    const btn = document.getElementById('lhThemeToggle') || document.getElementById('themeToggle');
     if (btn) {
         btn.textContent = t === 'dark' ? '☀️' : '🌙';
         btn.title = t === 'dark' ? 'हल्की थीम पर जाएँ' : 'गहरी थीम पर जाएँ';
@@ -760,7 +846,7 @@ function initMedicheckTheme() {
         applyMedicheckTheme('light');
     }
 
-    const btn = document.getElementById('themeToggle');
+    const btn = document.getElementById('lhThemeToggle') || document.getElementById('themeToggle');
     if (btn) {
         btn.addEventListener('click', function () {
             const cur = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
@@ -781,7 +867,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     initMedicheckTheme();
 
     // Load data from API first
-    await loadDataFromAPI();
+    const dataLoaded = await loadDataFromAPI();
 
     const from404 = sessionStorage.getItem('lh404Search');
     if (from404) {
@@ -789,11 +875,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         const searchInput404 = document.getElementById('searchInput');
         if (searchInput404) {
             searchInput404.value = from404;
-            searchHospitals();
+            if (dataLoaded) searchHospitals();
         }
     }
-    
-    restoreSavedView();
+
+    if (dataLoaded) {
+        restoreSavedView();
+    }
     
     // Initialize location (async) — restore if user allowed earlier
     initializeLocation();
@@ -812,7 +900,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         } else {
             hideSuggestions();
             hideSearchError();
-            renderPage();
+            if (!dataLoadFailed) renderPage();
         }
     });
     
@@ -930,6 +1018,10 @@ function getPaginatedItems(items, page) {
 }
 
 function renderPage() {
+    if (dataLoadFailed) {
+        showDataLoadErrorCard();
+        return;
+    }
     const grid = document.getElementById('hospitalsGrid');
     currentPaginationType = 'hospitals';
     
@@ -2789,13 +2881,4 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     });
 });
 
-// Footer Go Top & Home - explicit handlers (reliable on mobile)
-document.getElementById('footerGoTop')?.addEventListener('click', function(e) {
-    e.preventDefault();
-    scrollToTop();
-});
-document.getElementById('footerHome')?.addEventListener('click', function(e) {
-    e.preventDefault();
-    scrollToTop();
-    goBackToHospitals();
-});
+// Footer Go Top & Home — handled by site-chrome.js (lhFooterGoTop / lhFooterHome)
