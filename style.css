@@ -3381,6 +3381,12 @@ body {
     outline-offset: 2px;
 }
 
+.social-icon-inactive {
+    opacity: 0.45;
+    cursor: default;
+    pointer-events: none;
+}
+
 /* Sub Footer - Base */
 .sub-footer {
     background: #0f172a;

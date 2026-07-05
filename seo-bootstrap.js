@@ -47,28 +47,52 @@
         }
     }
 
+    function normalizeSocialUrl(network, url, contact) {
+        url = trim(url);
+        if (!url && network === 'whatsapp') {
+            var waNum = trim(contact.whatsapp || contact.phone || '');
+            if (waNum) url = 'https://wa.me/' + waNum.replace(/\D/g, '');
+        }
+        if (!url) return '';
+        if (network === 'whatsapp') {
+            var digits = url.replace(/\D/g, '');
+            if (digits.length >= 10 && !/^https?:\/\//i.test(url)) {
+                return 'https://wa.me/' + digits;
+            }
+        }
+        if (!/^https?:\/\//i.test(url)) url = 'https://' + url.replace(/^\/+/, '');
+        return url;
+    }
+
     function applySocial(social, contact) {
         social = social && typeof social === 'object' ? social : {};
         contact = contact && typeof contact === 'object' ? contact : {};
-        var whatsappNum = trim(contact.whatsapp);
-        var waFromContact = whatsappNum ? 'https://wa.me/' + whatsappNum.replace(/\D/g, '') : '';
         var networks = {
             facebook: trim(social.facebook),
             instagram: trim(social.instagram),
             youtube: trim(social.youtube),
             twitter: trim(social.twitter),
             telegram: trim(social.telegram),
-            whatsapp: trim(social.whatsapp) || waFromContact
+            whatsapp: trim(social.whatsapp)
         };
 
         Object.keys(networks).forEach(function (network) {
-            var url = networks[network];
-            var valid = url && /^https?:\/\//i.test(url);
+            var url = normalizeSocialUrl(network, networks[network], contact);
+            var valid = !!url;
             document.querySelectorAll('[data-social-' + network + ']').forEach(function (el) {
+                var isPrimary = el.classList.contains('social-icon-primary');
                 if (valid) {
                     el.setAttribute('href', url);
                     el.setAttribute('target', '_blank');
                     el.setAttribute('rel', 'noopener noreferrer');
+                    el.classList.remove('social-icon-inactive');
+                    el.removeAttribute('aria-disabled');
+                    el.style.display = '';
+                } else if (isPrimary) {
+                    el.setAttribute('href', '#');
+                    el.removeAttribute('target');
+                    el.classList.add('social-icon-inactive');
+                    el.setAttribute('aria-disabled', 'true');
                     el.style.display = '';
                 } else {
                     el.style.display = 'none';
@@ -76,18 +100,8 @@
             });
         });
 
-        document.querySelectorAll('.social-icons').forEach(function (box) {
-            var visible = false;
-            box.querySelectorAll('a.social-icon').forEach(function (a) {
-                if (a.style.display !== 'none') visible = true;
-            });
-            box.style.display = visible ? '' : 'none';
-        });
-
         document.querySelectorAll('.footer-col-connect').forEach(function (col) {
-            var icons = col.querySelector('.social-icons');
-            var hasIcons = icons && icons.style.display !== 'none';
-            col.style.display = hasIcons ? '' : 'none';
+            col.style.display = '';
         });
     }
 
