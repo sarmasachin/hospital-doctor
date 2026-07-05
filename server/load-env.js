@@ -3,8 +3,16 @@ const path = require('path');
 
 function parseEnvContent(raw) {
     const env = {};
-    raw.replace(/^\uFEFF/, '').split(/\r?\n/).forEach((line) => {
-        let trimmed = line.trim();
+    const normalized = raw.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').trim();
+    if (!normalized) return env;
+
+    // Some editors save the whole .env on one line — split before KEY= tokens.
+    const chunks = normalized.includes('\n')
+        ? normalized.split(/\n/)
+        : normalized.split(/\s+(?=[A-Z][A-Z0-9_]*=)/);
+
+    chunks.forEach((chunk) => {
+        let trimmed = chunk.trim();
         if (!trimmed || trimmed.startsWith('#')) return;
         if (trimmed.startsWith('export ')) trimmed = trimmed.slice(7).trim();
         const idx = trimmed.indexOf('=');
