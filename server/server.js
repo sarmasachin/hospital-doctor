@@ -6,7 +6,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { loadServerEnv } = require('./load-env');
-const envPath = loadServerEnv(__dirname);
+const envLoad = loadServerEnv(__dirname);
+const envPath = envLoad.path;
 const { hashPassword, verifyPassword, signToken, authenticate, requireSuperAdmin, requireAdminRole, requireDoctorManager, requireBloodManager, requireHospitalIdAccess } = require('./auth');
 const { sendOtpEmail, isEmailConfigured } = require('./email-service');
 const crypto = require('crypto');
@@ -194,7 +195,9 @@ app.use((req, res, next) => {
 // MySQL Connection Pool (Better performance)
 if (!process.env.DB_USER || !process.env.DB_NAME) {
     console.error('Missing DB env vars after loading:', envPath);
+    console.error('File exists:', envLoad.exists, '| Keys loaded:', Object.keys(envLoad.env || {}).join(', ') || '(none)');
     console.error('DB_USER=', process.env.DB_USER || '(empty)');
+    console.error('Run: node check-env.js');
 }
 
 const db = mysql.createPool({

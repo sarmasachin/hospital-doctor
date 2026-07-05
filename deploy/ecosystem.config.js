@@ -1,8 +1,12 @@
 const path = require('path');
 const { loadEnvFile } = require('../server/load-env');
 
-const serverDir = path.join(__dirname, '..', 'server');
-const fileEnv = loadEnvFile(path.join(serverDir, '.env'));
+const serverDir = path.resolve(__dirname, '..', 'server');
+const fileEnv = loadEnvFile(path.join(serverDir, '.env')).env;
+
+if (!fileEnv.DB_USER) {
+    console.warn('[ecosystem] WARNING: server/.env missing or DB_USER empty at', path.join(serverDir, '.env'));
+}
 
 module.exports = {
     apps: [{
