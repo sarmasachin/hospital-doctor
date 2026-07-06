@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <script>
+    (function () {
+        try {
+            var token = localStorage.getItem('medichek_auth_token');
+            var savedAdmin = localStorage.getItem('adminLoggedIn');
+            if (!token || !savedAdmin) return;
+            var admin = JSON.parse(savedAdmin);
+            var role = admin && admin.role;
+            var ok = role === 'doctor_admin' && admin.doctor_id;
+            if (ok) document.documentElement.classList.add('session-active');
+        } catch (e) { /* corrupt session — show login */ }
+    })();
+    </script>
+    <title>Doctor Panel - LiveHospital</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="admin-login.css">
+    <link rel="stylesheet" href="forgot-password.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #070b12 0%, #0c1929 50%, #0a1628 100%);
+            color: #ffffff;
+            min-height: 100vh;
+        }
+
+        .alert {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 14px 22px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            z-index: 9999;
+            display: none;
+            max-width: 360px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+        }
+        .alert.show { display: block; animation: slideIn 0.3s ease; }
+        .alert.success { background: #0d3320; border: 1px solid #22c55e; color: #86efac; }
+        .alert.error { background: #3b1010; border: 1px solid #ef4444; color: #fca5a5; }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .dashboard { display: none; min-height: 100vh; flex-direction: column; }
+        .dashboard.active { display: flex; }
+
+        html.session-active #loginPage { display: none !important; }
+        html.session-active #dashboard { display: flex !important; }
+
+        .header {
+            background: #000000;
+            padding: 14px 20px;
+            border-bottom: 2px solid #0ea5e9;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-logo .icon { font-size: 1.8rem; }
+
+        .header-logo h1 {
+            font-size: 1.25rem;
+            color: #38bdf8;
+        }
+
+        .header-logo span {
+            color: #9ca3af;
+            font-size: 0.82rem;
+            display: block;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .doctor-badge {
+            background: rgba(14, 165, 233, 0.15);
+            border: 1px solid #0ea5e9;
+            padding: 8px 16px;
+            border-radius: 20px;
+            color: #7dd3fc;
+            font-size: 0.88rem;
+            max-width: 220px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .btn-logout {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .main-container {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 28px 20px 48px;
+            width: 100%;
+        }
+
+        .profile-hero {
+            background: linear-gradient(145deg, #111827, #0f172a);
+            border: 1px solid #1e3a5f;
+            border-radius: 16px;
+            padding: 28px 24px;
+            text-align: center;
+            margin-bottom: 28px;
+            box-shadow: 0 12px 40px rgba(14, 165, 233, 0.08);
+        }
+
+        .profile-hero .avatar {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0ea5e9, #0284c7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin: 0 auto 16px;
+        }
+
+        .profile-hero h2 {
+            font-size: 1.45rem;
+            margin-bottom: 6px;
+            color: #f8fafc;
+        }
+
+        .profile-hero .meta {
+            color: #94a3b8;
+            font-size: 0.92rem;
+            line-height: 1.5;
+        }
+
+        .current-status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 14px;
+            padding: 8px 18px;
+            border-radius: 24px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .current-status-pill.available { background: #14532d; color: #86efac; border: 1px solid #22c55e; }
+        .current-status-pill.busy { background: #431407; color: #fdba74; border: 1px solid #f97316; }
+        .current-status-pill.leave { background: #450a0a; color: #fca5a5; border: 1px solid #ef4444; }
+
+        .status-section h3 {
+            text-align: center;
+            color: #cbd5e1;
+            font-size: 1rem;
+            font-weight: 500;
+            margin-bottom: 18px;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 28px;
+        }
+
+        @media (max-width: 520px) {
+            .status-grid { grid-template-columns: 1fr; }
+        }
+
+        .status-btn {
+            border: 2px solid #334155;
+            background: #0f172a;
+            border-radius: 14px;
+            padding: 22px 12px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+            color: #e2e8f0;
+            min-height: 110px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: inherit;
+        }
+
+        .status-btn .emoji { font-size: 2rem; line-height: 1; }
+        .status-btn .label { font-size: 1.05rem; font-weight: 600; }
+        .status-btn .hint { font-size: 0.72rem; color: #64748b; }
+
+        .status-btn:hover:not(:disabled) { transform: translateY(-2px); }
+        .status-btn:disabled { opacity: 0.55; cursor: wait; }
+
+        .status-btn.available.active {
+            border-color: #22c55e;
+            background: rgba(34, 197, 94, 0.12);
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+        }
+        .status-btn.busy.active {
+            border-color: #f97316;
+            background: rgba(249, 115, 22, 0.12);
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
+        }
+        .status-btn.leave.active {
+            border-color: #ef4444;
+            background: rgba(239, 68, 68, 0.12);
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+        }
+
+        .action-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 480px) {
+            .action-row { grid-template-columns: 1fr; }
+        }
+
+        .btn-action {
+            border: none;
+            border-radius: 12px;
+            padding: 16px 20px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-family: inherit;
+            transition: transform 0.15s;
+        }
+
+        .btn-action:hover { transform: translateY(-1px); }
+        .btn-view { background: #1e40af; color: #fff; }
+        .btn-edit { background: #0ea5e9; color: #fff; }
+
+        .last-updated {
+            text-align: center;
+            color: #64748b;
+            font-size: 0.82rem;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.75);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.show { display: flex; }
+
+        .modal {
+            background: #111827;
+            border: 1px solid #334155;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 520px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 22px;
+            border-bottom: 1px solid #334155;
+        }
+
+        .modal-header h3 { font-size: 1.15rem; color: #38bdf8; }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: #9ca3af;
+            font-size: 1.5rem;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .modal-body { padding: 22px; }
+
+        .profile-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid #1e293b;
+            font-size: 0.92rem;
+        }
+
+        .profile-row:last-child { border-bottom: none; }
+        .profile-row .key { color: #94a3b8; flex-shrink: 0; }
+        .profile-row .val { color: #f1f5f9; text-align: right; word-break: break-word; }
+
+        .profile-section-title {
+            color: #64748b;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin: 16px 0 8px;
+        }
+
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block;
+            color: #94a3b8;
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 14px;
+            background: #0d1117;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 0.95rem;
+            font-family: inherit;
+        }
+
+        .form-group textarea { min-height: 70px; resize: vertical; }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #0ea5e9;
+        }
+
+        .btn-save {
+            width: 100%;
+            background: #0ea5e9;
+            color: #fff;
+            border: none;
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .login-note-private {
+            margin-top: 16px;
+            font-size: 0.78rem;
+            color: #64748b;
+            text-align: center;
+            line-height: 1.45;
+        }
+
+        .theme-doctor .btn-login { background: linear-gradient(135deg, #0ea5e9, #0284c7); }
+    </style>
+</head>
+<body>
+    <div class="alert" id="alertBox"></div>
+
+    <!-- Login -->
+    <div class="login-page" id="loginPage">
+        <div class="login-shell theme-doctor">
+            <div class="login-brand">
+                <div class="login-brand-mark">DR</div>
+                <h1>Doctor Panel</h1>
+                <p>अपनी उपलब्धता और प्रोफाइल प्रबंधित करें</p>
+                <ul>
+                    <li>उपलब्ध / व्यस्त / छुट्टी स्टेटस</li>
+                    <li>प्रोफाइल देखें और अपडेट करें</li>
+                    <li>Email या mobile से लॉगिन</li>
+                </ul>
+            </div>
+            <div class="login-card">
+                <div class="login-card-head">
+                    <h2>Sign in</h2>
+                    <p>Doctor account से लॉगिन करें</p>
+                </div>
+
+                <div class="login-error" id="loginError">Invalid credentials. Please try again.</div>
+
+                <form id="loginForm" novalidate>
+                    <div class="form-group">
+                        <label>Email या Mobile</label>
+                        <input type="text" id="loginUsername" placeholder="email@gmail.com या 9876543210" autocomplete="username">
+                        <span class="input-icon" id="usernameIcon"></span>
+                        <div class="field-error" id="usernameError">Email या mobile डालें</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="loginPassword" placeholder="पासवर्ड" autocomplete="current-password">
+                        <span class="input-icon" id="passwordIcon"></span>
+                        <div class="field-error" id="passwordError">पासवर्ड डालें</div>
+                    </div>
+                    <button type="submit" class="btn-login">Sign in</button>
+                </form>
+
+                <div id="forgotPasswordLinkWrap" class="login-footer-link">
+                    <button type="button" id="openForgotPassword" class="forgot-password-link">Forgot password?</button>
+                </div>
+
+                <div id="forgotPasswordPanel" class="forgot-form-panel" style="display:none">
+                    <h3>Reset password</h3>
+                    <p>Registered email पर OTP भेजा जाएगा।</p>
+                    <div id="forgotStep1">
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="forgotEmail" placeholder="doctor@example.com" autocomplete="email">
+                        </div>
+                        <button type="button" id="btnSendOtp" class="btn-forgot-action">Send code</button>
+                    </div>
+                    <div id="forgotStep2" style="display:none;">
+                        <div class="form-group">
+                            <label>Verification code</label>
+                            <input type="text" id="forgotOtp" placeholder="6-digit code" maxlength="6" inputmode="numeric" autocomplete="one-time-code">
+                        </div>
+                        <div class="form-group">
+                            <label>New password</label>
+                            <input type="password" id="forgotNewPassword" placeholder="Minimum 6 characters" autocomplete="new-password">
+                        </div>
+                        <div class="form-group">
+                            <label>Confirm password</label>
+                            <input type="password" id="forgotConfirmPassword" placeholder="Re-enter password" autocomplete="new-password">
+                        </div>
+                        <button type="button" id="btnResetPassword" class="btn-forgot-action">Update password</button>
+                    </div>
+                    <button type="button" id="backToLogin" class="forgot-back-link">Back to sign in</button>
+                    <div id="forgotMessage" class="forgot-message"></div>
+                </div>
+
+                <p class="login-note-private">आपका email और mobile सार्वजनिक साइट पर नहीं दिखता।</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="dashboard" id="dashboard">
+        <header class="header">
+            <div class="header-logo">
+                <span class="icon">🩺</span>
+                <div>
+                    <h1>LiveHospital — Doctor</h1>
+                    <span id="headerHospitalLine">Hospital</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <span class="doctor-badge" id="headerDoctorName">Doctor</span>
+                <button type="button" class="btn-logout" onclick="logout()">Logout</button>
+            </div>
+        </header>
+
+        <div class="main-container">
+            <div class="profile-hero">
+                <div class="avatar">👨‍⚕️</div>
+                <h2 id="heroDoctorName">—</h2>
+                <p class="meta" id="heroDoctorMeta">—</p>
+                <div class="current-status-pill available" id="currentStatusPill">
+                    <span id="currentStatusEmoji">✅</span>
+                    <span id="currentStatusText">उपलब्ध</span>
+                </div>
+            </div>
+
+            <div class="status-section">
+                <h3>आज आपकी स्थिति क्या है?</h3>
+                <div class="status-grid">
+                    <button type="button" class="status-btn available" id="btnStatusAvailable" onclick="setDoctorStatus('available')">
+                        <span class="emoji">✅</span>
+                        <span class="label">उपलब्ध</span>
+                        <span class="hint">Available</span>
+                    </button>
+                    <button type="button" class="status-btn busy" id="btnStatusBusy" onclick="setDoctorStatus('busy')">
+                        <span class="emoji">⏳</span>
+                        <span class="label">व्यस्त</span>
+                        <span class="hint">Busy</span>
+                    </button>
+                    <button type="button" class="status-btn leave" id="btnStatusLeave" onclick="setDoctorStatus('leave')">
+                        <span class="emoji">🏠</span>
+                        <span class="label">छुट्टी पर</span>
+                        <span class="hint">On Leave</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="action-row">
+                <button type="button" class="btn-action btn-view" onclick="openViewProfile()">👁️ प्रोफाइल देखें</button>
+                <button type="button" class="btn-action btn-edit" onclick="openUpdateProfile()">✏️ प्रोफाइल अपडेट</button>
+            </div>
+
+            <p class="last-updated" id="lastUpdatedText">—</p>
+        </div>
+    </div>
+
+    <!-- View Profile Modal -->
+    <div class="modal-overlay" id="viewModal" onclick="if(event.target===this)closeViewProfile()">
+        <div class="modal" role="dialog" aria-labelledby="viewModalTitle">
+            <div class="modal-header">
+                <h3 id="viewModalTitle">👁️ प्रोफाइल</h3>
+                <button type="button" class="modal-close" onclick="closeViewProfile()" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body" id="viewProfileBody"></div>
+        </div>
+    </div>
+
+    <!-- Update Profile Modal -->
+    <div class="modal-overlay" id="editModal" onclick="if(event.target===this)closeUpdateProfile()">
+        <div class="modal" role="dialog" aria-labelledby="editModalTitle">
+            <div class="modal-header">
+                <h3 id="editModalTitle">✏️ प्रोफाइल अपडेट</h3>
+                <button type="button" class="modal-close" onclick="closeUpdateProfile()" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="updateProfileForm" onsubmit="saveProfile(event)">
+                    <div class="form-group">
+                        <label>विशेषज्ञता (Specialty) *</label>
+                        <input type="text" id="editSpecialty" required maxlength="255">
+                    </div>
+                    <div class="form-group">
+                        <label>अनुभव (Experience)</label>
+                        <input type="text" id="editExperience" placeholder="उदा. 12 years">
+                    </div>
+                    <div class="form-group">
+                        <label>योग्यता (Qualification)</label>
+                        <input type="text" id="editQualification" placeholder="MBBS, MD">
+                    </div>
+                    <div class="form-group">
+                        <label>उप-विशेषज्ञता</label>
+                        <input type="text" id="editSubSpecialization">
+                    </div>
+                    <div class="form-group">
+                        <label>OPD समय (Timing)</label>
+                        <input type="text" id="editTiming" placeholder="2:00 PM - 10:00 PM">
+                    </div>
+                    <div class="form-group">
+                        <label>OPD दिन (comma separated)</label>
+                        <input type="text" id="editOpdDays" placeholder="Mon,Tue,Wed,Thu,Fri,Sat">
+                    </div>
+                    <div class="form-group">
+                        <label>फीस (Fees)</label>
+                        <input type="text" id="editFees" placeholder="₹500">
+                    </div>
+                    <div class="form-group">
+                        <label>Room No</label>
+                        <input type="text" id="editRoomNo">
+                    </div>
+                    <div class="form-group">
+                        <label>Floor</label>
+                        <input type="text" id="editFloor">
+                    </div>
+                    <div class="form-group">
+                        <label>Block</label>
+                        <input type="text" id="editBlock">
+                    </div>
+                    <button type="submit" class="btn-save" id="btnSaveProfile">💾 सेव करें</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="api-auth.js"></script>
+    <script src="forgot-password.js"></script>
+    <script>
+        const API_URL = typeof getApiBase === 'function' ? getApiBase() : (window.location.origin + '/api');
+
+        const STATUS_LABELS = {
+            available: { text: 'उपलब्ध', emoji: '✅' },
+            busy: { text: 'व्यस्त', emoji: '⏳' },
+            leave: { text: 'छुट्टी पर', emoji: '🏠' }
+        };
+
+        let doctorProfile = null;
+        let hospitalInfo = null;
+        let accountInfo = null;
+        let statusUpdating = false;
+        let doctorModalHistorySuppress = false;
+
+        function showFieldError(inputId, errorId, iconId, message) {
+            const input = document.getElementById(inputId);
+            const error = document.getElementById(errorId);
+            const icon = document.getElementById(iconId);
+            if (!input || !error) return;
+            input.classList.add('error');
+            input.classList.remove('success');
+            error.textContent = message;
+            error.classList.add('show');
+            if (icon) { icon.textContent = '❌'; icon.className = 'input-icon invalid'; }
+            input.classList.add('shake');
+            setTimeout(function () { input.classList.remove('shake'); }, 400);
+        }
+
+        function showFieldSuccess(inputId, errorId, iconId) {
+            const input = document.getElementById(inputId);
+            const error = document.getElementById(errorId);
+            const icon = document.getElementById(iconId);
+            if (!input || !error) return;
+            input.classList.remove('error');
+            input.classList.add('success');
+            error.classList.remove('show');
+            if (icon) { icon.textContent = '✅'; icon.className = 'input-icon valid'; }
+        }
+
+        function clearFieldValidation(inputId, errorId, iconId) {
+            const input = document.getElementById(inputId);
+            const error = document.getElementById(errorId);
+            const icon = document.getElementById(iconId);
+            if (!input || !error) return;
+            input.classList.remove('error', 'success');
+            error.classList.remove('show');
+            if (icon) { icon.textContent = ''; icon.className = 'input-icon'; }
+        }
+
+        function isValidLoginIdentifier(value) {
+            const v = String(value || '').trim();
+            if (v.includes('@')) return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+            const digits = v.replace(/\D/g, '');
+            return digits.length >= 10;
+        }
+
+        function showAlert(message, type) {
+            const box = document.getElementById('alertBox');
+            if (!box) return;
+            box.textContent = message;
+            box.className = 'alert show ' + (type || 'success');
+            setTimeout(function () { box.classList.remove('show'); }, 3200);
+        }
+
+        function formatUpdatedAt(iso) {
+            if (!iso) return '—';
+            try {
+                const d = new Date(iso);
+                return d.toLocaleString('hi-IN', { dateStyle: 'medium', timeStyle: 'short' });
+            } catch (_) {
+                return iso;
+            }
+        }
+
+        function normalizeStatus(status) {
+            const s = String(status || 'available').toLowerCase();
+            return STATUS_LABELS[s] ? s : 'available';
+        }
+
+        function renderStatusUI(status) {
+            const s = normalizeStatus(status);
+            const info = STATUS_LABELS[s];
+            const pill = document.getElementById('currentStatusPill');
+            const emoji = document.getElementById('currentStatusEmoji');
+            const text = document.getElementById('currentStatusText');
+            if (pill) {
+                pill.className = 'current-status-pill ' + s;
+            }
+            if (emoji) emoji.textContent = info.emoji;
+            if (text) text.textContent = info.text;
+
+            ['available', 'busy', 'leave'].forEach(function (key) {
+                const btn = document.getElementById('btnStatus' + key.charAt(0).toUpperCase() + key.slice(1));
+                if (btn) btn.classList.toggle('active', key === s);
+            });
+        }
+
+        function renderHero() {
+            if (!doctorProfile) return;
+            const name = doctorProfile.name || 'Doctor';
+            const specialty = doctorProfile.specialty || '';
+            const exp = doctorProfile.experience ? ' · ' + doctorProfile.experience : '';
+            document.getElementById('heroDoctorName').textContent = name;
+            document.getElementById('heroDoctorMeta').textContent = specialty + exp;
+            document.getElementById('headerDoctorName').textContent = name;
+            if (hospitalInfo && hospitalInfo.name) {
+                const loc = hospitalInfo.city ? ' · ' + hospitalInfo.city : '';
+                document.getElementById('headerHospitalLine').textContent = hospitalInfo.name + loc;
+            }
+            document.getElementById('lastUpdatedText').textContent =
+                'अंतिम अपडेट: ' + formatUpdatedAt(doctorProfile.updated_at);
+            renderStatusUI(doctorProfile.status);
+        }
+
+        function showDoctorDashboard() {
+            document.documentElement.classList.add('session-active');
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('dashboard').classList.add('active');
+            initDoctorModalHistory();
+            loadDoctorProfile();
+        }
+
+        async function loadDoctorProfile() {
+            try {
+                const res = await authFetch(API_URL + '/me/doctor');
+                if (!res.ok) {
+                    showAdminError(null, await getApiFailureMessage(res, 'प्रोफाइल लोड नहीं हो सकी'));
+                    return;
+                }
+                const data = await res.json();
+                doctorProfile = data.doctor || null;
+                hospitalInfo = data.hospital || null;
+                accountInfo = data.account || null;
+                if (!doctorProfile) {
+                    showAlert('Doctor profile नहीं मिली', 'error');
+                    return;
+                }
+                if (!doctorProfile.status) doctorProfile.status = 'available';
+                renderHero();
+            } catch (err) {
+                showAdminError(err, 'प्रोफाइल लोड नहीं हो सकी');
+            }
+        }
+
+        async function setDoctorStatus(status) {
+            if (statusUpdating) return;
+            const s = normalizeStatus(status);
+            if (doctorProfile && normalizeStatus(doctorProfile.status) === s) return;
+
+            statusUpdating = true;
+            document.querySelectorAll('.status-btn').forEach(function (b) { b.disabled = true; });
+
+            try {
+                const res = await authFetch(API_URL + '/me/doctor/status', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: s })
+                });
+                const data = await res.json().catch(function () { return {}; });
+                if (!res.ok) {
+                    showAdminError(null, data.error || 'स्टेटस अपडेट नहीं हो सका');
+                    return;
+                }
+                if (doctorProfile) {
+                    doctorProfile.status = data.status || s;
+                    doctorProfile.updated_at = new Date().toISOString();
+                }
+                renderHero();
+                showAlert('स्टेटस अपडेट: ' + STATUS_LABELS[s].text, 'success');
+            } catch (err) {
+                showAdminError(err, 'स्टेटस अपडेट नहीं हो सका');
+            } finally {
+                statusUpdating = false;
+                document.querySelectorAll('.status-btn').forEach(function (b) { b.disabled = false; });
+            }
+        }
+
+        function escHtml(s) {
+            return String(s || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function profileRow(key, val) {
+            return '<div class="profile-row"><span class="key">' + escHtml(key) + '</span><span class="val">' + escHtml(val || '—') + '</span></div>';
+        }
+
+        function openViewProfile() {
+            if (!doctorProfile) return;
+            const s = normalizeStatus(doctorProfile.status);
+            let html = '';
+            html += '<div class="profile-section-title">सार्वजनिक प्रोफाइल</div>';
+            html += profileRow('नाम', doctorProfile.name);
+            html += profileRow('विशेषज्ञता', doctorProfile.specialty);
+            html += profileRow('उप-विशेषज्ञता', doctorProfile.sub_specialization);
+            html += profileRow('योग्यता', doctorProfile.qualification);
+            html += profileRow('अनुभव', doctorProfile.experience);
+            html += profileRow('स्थिति', STATUS_LABELS[s].emoji + ' ' + STATUS_LABELS[s].text);
+            html += profileRow('OPD समय', doctorProfile.timing);
+            html += profileRow('OPD दिन', doctorProfile.opd_days);
+            html += profileRow('फीस', doctorProfile.fees);
+            html += profileRow('Room', doctorProfile.room_no);
+            html += profileRow('Floor', doctorProfile.floor);
+            html += profileRow('Block', doctorProfile.block);
+            if (hospitalInfo) {
+                html += '<div class="profile-section-title">अस्पताल</div>';
+                html += profileRow('नाम', hospitalInfo.name);
+                html += profileRow('शहर', hospitalInfo.city);
+                html += profileRow('स्थान', hospitalInfo.location);
+            }
+            if (accountInfo) {
+                html += '<div class="profile-section-title">लॉगिन (निजी — सार्वजनिक नहीं)</div>';
+                html += profileRow('Email', accountInfo.email);
+                html += profileRow('Mobile', accountInfo.mobile);
+            }
+            document.getElementById('viewProfileBody').innerHTML = html;
+            document.getElementById('viewModal').classList.add('show');
+            pushDoctorModalState('view');
+        }
+
+        function closeViewProfile() {
+            document.getElementById('viewModal').classList.remove('show');
+        }
+
+        function openUpdateProfile() {
+            if (!doctorProfile) return;
+            document.getElementById('editSpecialty').value = doctorProfile.specialty || '';
+            document.getElementById('editExperience').value = doctorProfile.experience || '';
+            document.getElementById('editQualification').value = doctorProfile.qualification || '';
+            document.getElementById('editSubSpecialization').value = doctorProfile.sub_specialization || '';
+            document.getElementById('editTiming').value = doctorProfile.timing || '';
+            document.getElementById('editOpdDays').value = doctorProfile.opd_days || '';
+            document.getElementById('editFees').value = doctorProfile.fees || '';
+            document.getElementById('editRoomNo').value = doctorProfile.room_no || '';
+            document.getElementById('editFloor').value = doctorProfile.floor || '';
+            document.getElementById('editBlock').value = doctorProfile.block || '';
+            document.getElementById('editModal').classList.add('show');
+            pushDoctorModalState('edit');
+        }
+
+        function closeUpdateProfile() {
+            document.getElementById('editModal').classList.remove('show');
+        }
+
+        async function saveProfile(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnSaveProfile');
+            if (btn) btn.disabled = true;
+
+            const payload = {
+                specialty: document.getElementById('editSpecialty').value.trim(),
+                experience: document.getElementById('editExperience').value.trim(),
+                qualification: document.getElementById('editQualification').value.trim(),
+                sub_specialization: document.getElementById('editSubSpecialization').value.trim(),
+                timing: document.getElementById('editTiming').value.trim(),
+                opd_days: document.getElementById('editOpdDays').value.trim(),
+                fees: document.getElementById('editFees').value.trim(),
+                room_no: document.getElementById('editRoomNo').value.trim(),
+                floor: document.getElementById('editFloor').value.trim(),
+                block: document.getElementById('editBlock').value.trim()
+            };
+
+            if (!payload.specialty) {
+                showAlert('विशेषज्ञता ज़रूरी है', 'error');
+                if (btn) btn.disabled = false;
+                return;
+            }
+
+            try {
+                const res = await authFetch(API_URL + '/me/doctor', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json().catch(function () { return {}; });
+                if (!res.ok) {
+                    showAdminError(null, data.error || 'प्रोफाइल सेव नहीं हो सकी');
+                    return;
+                }
+                closeUpdateProfile();
+                showAlert('प्रोफाइल सेव हो गई', 'success');
+                await loadDoctorProfile();
+            } catch (err) {
+                showAdminError(err, 'प्रोफाइल सेव नहीं हो सकी');
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        }
+
+        function pushDoctorModalState(modal) {
+            if (doctorModalHistorySuppress || typeof history === 'undefined' || !history.pushState) return;
+            history.pushState({ lhDoctorModal: modal }, '', window.location.pathname + window.location.search);
+        }
+
+        function initDoctorModalHistory() {
+            if (typeof history === 'undefined' || !history.replaceState) return;
+            const dashboard = document.getElementById('dashboard');
+            if (!dashboard || !dashboard.classList.contains('active')) return;
+            doctorModalHistorySuppress = true;
+            history.replaceState({ lhDoctorModal: null }, '', window.location.pathname + window.location.search);
+            doctorModalHistorySuppress = false;
+        }
+
+        window.addEventListener('popstate', function (e) {
+            const dashboard = document.getElementById('dashboard');
+            if (!dashboard || !dashboard.classList.contains('active')) return;
+            const modal = e.state && e.state.lhDoctorModal;
+            if (!modal) {
+                closeViewProfile();
+                closeUpdateProfile();
+            }
+        });
+
+        async function checkLoginState() {
+            const token = typeof getAuthToken === 'function' ? getAuthToken() : null;
+            const savedAdmin = localStorage.getItem('adminLoggedIn');
+            if (!token || !savedAdmin) {
+                document.documentElement.classList.remove('session-active');
+                return false;
+            }
+            try {
+                const admin = JSON.parse(savedAdmin);
+                if (admin.role !== 'doctor_admin' || !admin.doctor_id) {
+                    document.documentElement.classList.remove('session-active');
+                    return false;
+                }
+                showDoctorDashboard();
+                return true;
+            } catch (err) {
+                document.documentElement.classList.remove('session-active');
+                return false;
+            }
+        }
+
+        function logout() {
+            doctorProfile = null;
+            hospitalInfo = null;
+            accountInfo = null;
+            clearAuthSession();
+            document.documentElement.classList.remove('session-active');
+            document.getElementById('dashboard').classList.remove('active');
+            document.getElementById('loginPage').style.display = 'flex';
+            document.getElementById('loginPassword').value = '';
+            closeViewProfile();
+            closeUpdateProfile();
+        }
+
+        document.getElementById('loginUsername').addEventListener('input', function () {
+            const value = this.value.trim();
+            if (!value) {
+                clearFieldValidation('loginUsername', 'usernameError', 'usernameIcon');
+                return;
+            }
+            if (isValidLoginIdentifier(value)) {
+                showFieldSuccess('loginUsername', 'usernameError', 'usernameIcon');
+            }
+        });
+
+        document.getElementById('loginPassword').addEventListener('input', function () {
+            const value = this.value;
+            if (!value) {
+                clearFieldValidation('loginPassword', 'passwordError', 'passwordIcon');
+                return;
+            }
+            if (value.length >= 6) {
+                showFieldSuccess('loginPassword', 'passwordError', 'passwordIcon');
+            }
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            let hasError = false;
+
+            if (!username || !isValidLoginIdentifier(username)) {
+                showFieldError('loginUsername', 'usernameError', 'usernameIcon', 'सही email या 10 अंकों का mobile डालें');
+                hasError = true;
+            }
+            if (!password || password.length < 6) {
+                showFieldError('loginPassword', 'passwordError', 'passwordIcon', 'पासवर्ड कम से कम 6 अक्षर');
+                hasError = true;
+            }
+            if (hasError) {
+                document.getElementById('loginError').style.display = 'block';
+                document.getElementById('loginError').textContent = 'कृपया सभी फ़ील्ड सही भरें';
+                return;
+            }
+
+            try {
+                const response = await fetch(API_URL + '/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: username, password: password })
+                });
+                const data = await response.json();
+
+                if (!data.success) {
+                    document.getElementById('loginError').style.display = 'block';
+                    document.getElementById('loginError').textContent = data.error || 'गलत लॉगिन';
+                    return;
+                }
+
+                if (data.admin.role !== 'doctor_admin' || !data.admin.doctor_id) {
+                    document.getElementById('loginError').style.display = 'block';
+                    document.getElementById('loginError').textContent = 'यह Doctor Panel का account नहीं है';
+                    return;
+                }
+
+                saveAuthSession(data.token, data.admin);
+                document.getElementById('loginError').style.display = 'none';
+                showDoctorDashboard();
+            } catch (err) {
+                document.getElementById('loginError').style.display = 'block';
+                document.getElementById('loginError').textContent = typeof getNetworkErrorMessage === 'function'
+                    ? getNetworkErrorMessage()
+                    : 'सर्वर कनेक्शन विफल';
+            }
+        });
+
+        initAdminSessionExpiredNotice();
+        checkLoginState();
+    </script>
+</body>
+</html>

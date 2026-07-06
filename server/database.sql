@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS hospitals (
     lng DECIMAL(10, 6) DEFAULT NULL,
     total_doctors INT DEFAULT 0,
     departments INT DEFAULT 10,
+    card_branding VARCHAR(255) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
@@ -70,12 +71,14 @@ CREATE TABLE IF NOT EXISTS admins (
     username VARCHAR(100) NOT NULL UNIQUE,
     name VARCHAR(255) DEFAULT NULL,
     password VARCHAR(255) NOT NULL,
-    role ENUM('superadmin', 'admin', 'hospital_admin', 'blood_admin') NOT NULL DEFAULT 'hospital_admin',
+    role ENUM('superadmin', 'admin', 'hospital_admin', 'blood_admin', 'doctor_admin') NOT NULL DEFAULT 'hospital_admin',
     hospital_id INT DEFAULT NULL,
+    doctor_id INT DEFAULT NULL,
     mobile VARCHAR(20) DEFAULT NULL,
     status ENUM('active', 'inactive') NOT NULL DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (hospital_id) REFERENCES hospitals(id) ON DELETE SET NULL
+    FOREIGN KEY (hospital_id) REFERENCES hospitals(id) ON DELETE SET NULL,
+    FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE SET NULL
 );
 
 -- Hospital Ratings (users can rate 1-5 stars)

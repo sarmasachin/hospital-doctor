@@ -8,7 +8,7 @@ const rateLimit = require('express-rate-limit');
 const { loadServerEnv } = require('./load-env');
 const envLoad = loadServerEnv(__dirname);
 const envPath = envLoad.path;
-const { hashPassword, verifyPassword, signToken, authenticate, requireSuperAdmin, requireAdminRole, requireDoctorManager, requireBloodManager, requireHospitalIdAccess } = require('./auth');
+const { hashPassword, verifyPassword, signToken, findAdminForLogin, validateDoctorAdminAccount, normalizeMobileDigits, authenticate, requireSuperAdmin, requireAdminRole, requireDoctorManager, requireBloodManager, requireDoctorSelf, requireHospitalIdAccess } = require('./auth');
 const { sendOtpEmail, isEmailConfigured } = require('./email-service');
 const crypto = require('crypto');
 
@@ -45,7 +45,7 @@ if (IS_PRODUCTION) {
         const host = String(req.hostname || '').toLowerCase();
         if (!PUBLIC_SITE_HOSTS.has(host)) return next();
         const p = req.path || '/';
-        if (/^\/(admin|hospital-admin|blood-admin)(\.html)?\/?$/i.test(p)) {
+        if (/^\/(admin|hospital-admin|blood-admin|doctor-admin)(\.html)?\/?$/i.test(p)) {
             const normalized = (p.replace(/\/$/, '') || '/admin').replace(/\.html$/i, '');
             return res.redirect(301, `${ADMIN_PANEL_BASE_URL}${normalized}`);
         }
@@ -123,7 +123,7 @@ function defaultSiteSettings() {
             notes: ''
         },
         seo: { pages: {} },
-        robots: { allowAll: true, disallowPaths: ['/admin', '/hospital-admin', '/blood-admin', '/api/'] },
+        robots: { allowAll: true, disallowPaths: ['/admin', '/hospital-admin', '/blood-admin', '/doctor-admin', '/api/'] },
         sitemap: { extraPaths: [] },
         images: { logoAlt: '', guidelines: '' },
         backup: { notes: '', lastRun: '' },
@@ -165,8 +165,8 @@ loadSiteSettings();
 
 function isMaintenanceExempt(reqPath, method) {
     if (method !== 'GET' && method !== 'HEAD') return true;
-    if (reqPath.startsWith('/admin') || reqPath.startsWith('/hospital-admin') || reqPath.startsWith('/blood-admin')) return true;
-    if (/^\/(admin|hospital-admin|blood-admin)\.html$/i.test(reqPath)) return true;
+    if (reqPath.startsWith('/admin') || reqPath.startsWith('/hospital-admin') || reqPath.startsWith('/blood-admin') || reqPath.startsWith('/doctor-admin')) return true;
+    if (/^\/(admin|hospital-admin|blood-admin|doctor-admin)\.html$/i.test(reqPath)) return true;
     if (reqPath.startsWith('/api')) return true;
     if (/\.(css|js|mjs|png|jpg|jpeg|gif|webp|svg|ico|woff2?|ttf|eot|map)$/i.test(reqPath)) return true;
     return false;
@@ -396,6 +396,60 @@ function formatScopedAdminRow(row) {
     };
 }
 
+const PUBLIC_DOCTOR_FIELDS = [
+    'id', 'name', 'specialty', 'status', 'experience', 'timing', 'fees', 'opd_days',
+    'room_no', 'floor', 'block', 'qualification', 'sub_specialization',
+    'hospital_id', 'hospital_name', 'created_at', 'updated_at'
+];
+
+function formatPublicDoctorRow(row) {
+    if (!row) return null;
+    const out = {};
+    PUBLIC_DOCTOR_FIELDS.forEach((key) => {
+        if (row[key] !== undefined) out[key] = row[key];
+    });
+    return out;
+}
+
+function formatDoctorAdminRow(row) {
+    return {
+        id: row.id,
+        email: row.username,
+        name: row.name || '',
+        mobile: row.mobile || '',
+        status: row.status || 'active',
+        doctor_id: row.doctor_id,
+        doctor_name: row.doctor_name || '',
+        specialty: row.specialty || '',
+        hospital_id: row.hospital_id,
+        hospital_name: row.hospital_name || '',
+        created_at: row.created_at
+    };
+}
+
+async function resolveDoctorIdFromInput(doctorIdRaw, doctorNameRaw) {
+    const doctorId = parseInt(doctorIdRaw, 10);
+    if (isValidId(doctorId)) return doctorId;
+    const doctorName = trimStr(doctorNameRaw);
+    if (!doctorName) return null;
+    const exact = await dbQuery('SELECT id FROM doctors WHERE name = ? LIMIT 1', [doctorName]);
+    if (exact.length) return exact[0].id;
+    const partial = await dbQuery('SELECT id FROM doctors WHERE name LIKE ? LIMIT 1', [`%${doctorName}%`]);
+    return partial.length ? partial[0].id : null;
+}
+
+async function assertDoctorAdminSlotAvailable(doctorId, excludeAdminId) {
+    const params = [doctorId];
+    let sql = "SELECT id FROM admins WHERE doctor_id = ? AND role = 'doctor_admin'";
+    if (isValidId(excludeAdminId)) {
+        sql += ' AND id <> ?';
+        params.push(excludeAdminId);
+    }
+    sql += ' LIMIT 1';
+    const rows = await dbQuery(sql, params);
+    return !rows.length;
+}
+
 // ============ ROOT ROUTE ============
 // Browser (HTML) → website; API clients (JSON) → API info
 app.get('/', (req, res) => {
@@ -432,9 +486,11 @@ app.get('/', (req, res) => {
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, '..', 'admin.html')));
 app.get('/hospital-admin', (req, res) => res.sendFile(path.join(__dirname, '..', 'hospital-admin.html')));
 app.get('/blood-admin', (req, res) => res.sendFile(path.join(__dirname, '..', 'blood-admin.html')));
+app.get('/doctor-admin', (req, res) => res.sendFile(path.join(__dirname, '..', 'doctor-admin.html')));
 app.get('/admin.html', (req, res) => res.sendFile(path.join(__dirname, '..', 'admin.html')));
 app.get('/hospital-admin.html', (req, res) => res.sendFile(path.join(__dirname, '..', 'hospital-admin.html')));
 app.get('/blood-admin.html', (req, res) => res.sendFile(path.join(__dirname, '..', 'blood-admin.html')));
+app.get('/doctor-admin.html', (req, res) => res.sendFile(path.join(__dirname, '..', 'doctor-admin.html')));
 app.get('/index.html', (req, res) => res.sendFile(path.join(__dirname, '..', 'index.html')));
 
 // Permalink-style URLs (user-friendly paths)
@@ -725,7 +781,7 @@ app.get('/api/doctors', (req, res) => {
             res.status(500).json({ error: err.message });
             return;
         }
-        res.json(results);
+        res.json(results.map(formatPublicDoctorRow));
     });
 });
 
@@ -741,7 +797,7 @@ app.get('/api/hospitals/:id/doctors', (req, res) => {
             res.status(500).json({ error: err.message });
             return;
         }
-        res.json(results);
+        res.json(results.map(formatPublicDoctorRow));
     });
 });
 
@@ -753,7 +809,7 @@ app.get('/api/doctors/status/:status', (req, res) => {
             res.status(500).json({ error: err.message });
             return;
         }
-        res.json(results);
+        res.json(results.map(formatPublicDoctorRow));
     });
 });
 
@@ -774,7 +830,11 @@ app.get('/api/doctors/:id', (req, res) => {
             res.status(500).json({ error: err.message });
             return;
         }
-        res.json(results[0]);
+        if (!results.length) {
+            res.status(404).json({ error: 'Doctor not found' });
+            return;
+        }
+        res.json(formatPublicDoctorRow(results[0]));
     });
 });
 
@@ -978,6 +1038,131 @@ app.delete('/api/doctors/:id', authenticate, requireDoctorManager, requireDoctor
     });
 });
 
+// ============ DOCTOR SELF-SERVICE (doctor_admin) ============
+
+app.get('/api/me/doctor', authenticate, requireDoctorSelf, async (req, res) => {
+    try {
+        const doctorId = req.admin.doctor_id;
+        const rows = await dbQuery(
+            `SELECT d.*, h.name AS hospital_name, h.city AS hospital_city, h.location AS hospital_location
+             FROM doctors d
+             LEFT JOIN hospitals h ON d.hospital_id = h.id
+             WHERE d.id = ?
+             LIMIT 1`,
+            [doctorId]
+        );
+        if (!rows.length) {
+            res.status(404).json({ error: 'Doctor profile not found' });
+            return;
+        }
+        const adminRows = await dbQuery(
+            'SELECT username, mobile, name FROM admins WHERE id = ? LIMIT 1',
+            [req.admin.id]
+        );
+        const adminRow = adminRows[0] || {};
+        res.json({
+            doctor: formatPublicDoctorRow(rows[0]),
+            hospital: {
+                name: rows[0].hospital_name || '',
+                city: rows[0].hospital_city || '',
+                location: rows[0].hospital_location || ''
+            },
+            account: {
+                email: adminRow.username || '',
+                mobile: adminRow.mobile || '',
+                display_name: adminRow.name || ''
+            }
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.patch('/api/me/doctor/status', authenticate, requireDoctorSelf, async (req, res) => {
+    try {
+        const status = (req.body.status || '').toLowerCase();
+        if (!DOCTOR_STATUSES.includes(status)) {
+            res.status(400).json({ error: 'Status must be available, busy, or leave' });
+            return;
+        }
+        const result = await dbQuery(
+            'UPDATE doctors SET status = ? WHERE id = ?',
+            [status, req.admin.doctor_id]
+        );
+        if (!result.affectedRows) {
+            res.status(404).json({ error: 'Doctor profile not found' });
+            return;
+        }
+        res.json({ message: 'Status updated successfully', status });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.put('/api/me/doctor', authenticate, requireDoctorSelf, async (req, res) => {
+    try {
+        const blockedFields = ['name', 'hospital_id', 'status', 'id', 'created_at', 'updated_at'];
+        for (const key of blockedFields) {
+            if (req.body[key] !== undefined) {
+                res.status(400).json({ error: `"${key}" cannot be updated from doctor panel` });
+                return;
+            }
+        }
+
+        const fieldNormalizers = {
+            specialty: (v) => trimStr(v),
+            experience: (v) => trimStr(v) || null,
+            timing: (v) => trimStr(v) || null,
+            fees: (v) => trimStr(v) || null,
+            opd_days: (v) => trimStr(v) || null,
+            room_no: (v) => trimStr(v) || null,
+            floor: (v) => trimStr(v) || null,
+            block: (v) => trimStr(v) || null,
+            qualification: (v) => trimStr(v) || null,
+            sub_specialization: (v) => trimStr(v) || null
+        };
+
+        const updates = [];
+        const params = [];
+        for (const [field, normalize] of Object.entries(fieldNormalizers)) {
+            if (req.body[field] === undefined) continue;
+            const value = normalize(req.body[field]);
+            if (field === 'specialty' && !value) {
+                res.status(400).json({ error: 'Specialty cannot be empty' });
+                return;
+            }
+            if (field === 'specialty' && value.length > 255) {
+                res.status(400).json({ error: 'Specialty max 255 characters' });
+                return;
+            }
+            if (field === 'opd_days' && value && value.length > 100) {
+                res.status(400).json({ error: 'OPD days max 100 characters' });
+                return;
+            }
+            updates.push(`${field}=?`);
+            params.push(value);
+        }
+
+        if (!updates.length) {
+            res.status(400).json({ error: 'No valid profile fields to update' });
+            return;
+        }
+
+        params.push(req.admin.doctor_id);
+        const result = await dbQuery(
+            `UPDATE doctors SET ${updates.join(', ')} WHERE id=?`,
+            params
+        );
+        if (!result.affectedRows) {
+            res.status(404).json({ error: 'Doctor profile not found' });
+            return;
+        }
+        res.json({ message: 'Profile updated successfully' });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // ============ SEARCH ROUTE ============
 app.get('/api/search', (req, res) => {
     const q = (req.query.q != null ? String(req.query.q) : '').trim().substring(0, 200);
@@ -1118,29 +1303,29 @@ app.delete('/api/blood-requests/:id', authenticate, requireBloodManager, require
 
 // ============ ADMIN ROUTES ============
 
-// Admin Login
-app.post('/api/admin/login', authLoginLimiter, (req, res) => {
+// Admin Login (email/username or mobile + password)
+app.post('/api/admin/login', authLoginLimiter, async (req, res) => {
     const username = trimStr(req.body.username);
     const password = req.body.password != null ? String(req.body.password) : '';
     if (!username) {
-        res.status(400).json({ error: 'Username is required' });
+        res.status(400).json({ error: 'Email, username, or mobile is required' });
         return;
     }
     if (!password) {
         res.status(400).json({ error: 'Password is required' });
         return;
     }
-    const query = 'SELECT id, username, password, role, hospital_id, name, status FROM admins WHERE username = ?';
-    db.query(query, [username], async (err, results) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
-        if (results.length === 0) {
+
+    try {
+        const admin = await findAdminForLogin(dbQuery, username);
+        if (!admin) {
             res.status(401).json({ error: 'Invalid username or password' });
             return;
         }
-        const admin = results[0];
+        if (admin._ambiguous) {
+            res.status(409).json({ error: 'यह mobile कई accounts से जुड़ा है। Super Admin से संपर्क करें।' });
+            return;
+        }
         if (admin.status === 'inactive') {
             res.status(403).json({ error: 'Account is inactive. Contact super admin.' });
             return;
@@ -1154,20 +1339,34 @@ app.post('/api/admin/login', authLoginLimiter, (req, res) => {
             const hashed = hashPassword(password);
             db.query('UPDATE admins SET password = ? WHERE id = ?', [hashed, admin.id]);
         }
+
+        const doctorCheck = await validateDoctorAdminAccount(dbQuery, admin);
+        if (!doctorCheck.ok) {
+            res.status(doctorCheck.status || 403).json({ error: doctorCheck.error });
+            return;
+        }
+        if (admin.role === 'doctor_admin' && doctorCheck.hospital_id && !admin.hospital_id) {
+            admin.hospital_id = doctorCheck.hospital_id;
+        }
+
         const token = signToken(admin);
+        const adminPayload = {
+            id: admin.id,
+            username: admin.username,
+            name: admin.name || '',
+            role: admin.role,
+            hospital_id: admin.hospital_id || null,
+            doctor_id: admin.doctor_id || null
+        };
         res.json({
             success: true,
             message: 'Login successful',
             token,
-            admin: {
-                id: admin.id,
-                username: admin.username,
-                name: admin.name || '',
-                role: admin.role,
-                hospital_id: admin.hospital_id
-            }
+            admin: adminPayload
         });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Forgot Password – send OTP to registered admin email
@@ -1518,6 +1717,131 @@ app.delete('/api/blood-admins/:id', authenticate, requireSuperAdmin, async (req,
         const result = await dbQuery('DELETE FROM admins WHERE id = ? AND role = ?', [req.params.id, 'blood_admin']);
         if (!result.affectedRows) return res.status(404).json({ error: 'Blood admin not found' });
         res.json({ message: 'Blood admin deleted successfully' });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ============ DOCTOR ADMIN ACCOUNTS ============
+
+app.get('/api/doctor-admins', authenticate, requireSuperAdmin, async (req, res) => {
+    try {
+        const rows = await dbQuery(`
+            SELECT a.id, a.username, a.name, a.mobile, a.status, a.doctor_id, a.hospital_id, a.created_at,
+                   d.name AS doctor_name, d.specialty, h.name AS hospital_name
+            FROM admins a
+            LEFT JOIN doctors d ON a.doctor_id = d.id
+            LEFT JOIN hospitals h ON a.hospital_id = h.id
+            WHERE a.role = 'doctor_admin'
+            ORDER BY a.id DESC
+        `);
+        res.json(rows.map(formatDoctorAdminRow));
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.post('/api/doctor-admins', authenticate, requireSuperAdmin, async (req, res) => {
+    try {
+        const name = trimStr(req.body.name);
+        const email = trimStr(req.body.email || req.body.username).toLowerCase();
+        const password = req.body.password != null ? String(req.body.password) : '';
+        const mobile = trimStr(req.body.mobile);
+        const status = trimStr(req.body.status) || 'active';
+
+        if (!name) return res.status(400).json({ error: 'Name is required' });
+        if (!email || !isValidEmail(email)) return res.status(400).json({ error: 'Valid email is required' });
+        if (!password || password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
+        if (!ADMIN_STATUSES.includes(status)) return res.status(400).json({ error: 'Invalid status' });
+        if (mobile && normalizeMobileDigits(mobile).length < 10) {
+            return res.status(400).json({ error: 'Valid 10-digit mobile is required' });
+        }
+
+        const doctorId = await resolveDoctorIdFromInput(req.body.doctor_id, req.body.doctor_name);
+        if (!doctorId) return res.status(400).json({ error: 'Doctor not found' });
+
+        const doctorRows = await dbQuery('SELECT id, hospital_id FROM doctors WHERE id = ? LIMIT 1', [doctorId]);
+        if (!doctorRows.length) return res.status(400).json({ error: 'Doctor not found' });
+
+        const slotFree = await assertDoctorAdminSlotAvailable(doctorId, null);
+        if (!slotFree) return res.status(400).json({ error: 'This doctor already has a login account' });
+
+        const hospitalId = doctorRows[0].hospital_id;
+        const hashedPassword = hashPassword(password);
+        const result = await dbQuery(
+            `INSERT INTO admins (username, name, password, role, hospital_id, doctor_id, mobile, status)
+             VALUES (?, ?, ?, 'doctor_admin', ?, ?, ?, ?)`,
+            [email, name, hashedPassword, hospitalId || null, doctorId, mobile || null, status]
+        );
+        res.json({ id: result.insertId, message: 'Doctor admin created successfully' });
+    } catch (e) {
+        const msg = e.message || '';
+        if (/Duplicate entry/i.test(msg)) return res.status(400).json({ error: 'Email already exists' });
+        res.status(500).json({ error: msg });
+    }
+});
+
+app.put('/api/doctor-admins/:id', authenticate, requireSuperAdmin, async (req, res) => {
+    try {
+        if (!isValidId(req.params.id)) return res.status(400).json({ error: 'Invalid admin id' });
+
+        const existing = await dbQuery(
+            "SELECT id, doctor_id FROM admins WHERE id = ? AND role = 'doctor_admin' LIMIT 1",
+            [req.params.id]
+        );
+        if (!existing.length) return res.status(404).json({ error: 'Doctor admin not found' });
+
+        const name = trimStr(req.body.name);
+        const email = trimStr(req.body.email || req.body.username).toLowerCase();
+        const password = req.body.password != null ? String(req.body.password) : '';
+        const mobile = trimStr(req.body.mobile);
+        const status = trimStr(req.body.status) || 'active';
+
+        if (!name) return res.status(400).json({ error: 'Name is required' });
+        if (!email || !isValidEmail(email)) return res.status(400).json({ error: 'Valid email is required' });
+        if (!ADMIN_STATUSES.includes(status)) return res.status(400).json({ error: 'Invalid status' });
+        if (mobile && normalizeMobileDigits(mobile).length < 10) {
+            return res.status(400).json({ error: 'Valid 10-digit mobile is required' });
+        }
+
+        let doctorId = await resolveDoctorIdFromInput(req.body.doctor_id, req.body.doctor_name);
+        if (!doctorId) doctorId = existing[0].doctor_id;
+        if (!doctorId) return res.status(400).json({ error: 'Doctor not found' });
+
+        const doctorRows = await dbQuery('SELECT id, hospital_id FROM doctors WHERE id = ? LIMIT 1', [doctorId]);
+        if (!doctorRows.length) return res.status(400).json({ error: 'Doctor not found' });
+
+        const slotFree = await assertDoctorAdminSlotAvailable(doctorId, req.params.id);
+        if (!slotFree) return res.status(400).json({ error: 'This doctor already has a login account' });
+
+        const hospitalId = doctorRows[0].hospital_id;
+        let sql = 'UPDATE admins SET username=?, name=?, role=?, hospital_id=?, doctor_id=?, mobile=?, status=?';
+        const params = [email, name, 'doctor_admin', hospitalId || null, doctorId, mobile || null, status];
+        if (password) {
+            if (password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
+            sql += ', password=?';
+            params.push(hashPassword(password));
+        }
+        sql += ' WHERE id=?';
+        params.push(req.params.id);
+        await dbQuery(sql, params);
+        res.json({ message: 'Doctor admin updated successfully' });
+    } catch (e) {
+        const msg = e.message || '';
+        if (/Duplicate entry/i.test(msg)) return res.status(400).json({ error: 'Email already exists' });
+        res.status(500).json({ error: msg });
+    }
+});
+
+app.delete('/api/doctor-admins/:id', authenticate, requireSuperAdmin, async (req, res) => {
+    try {
+        if (!isValidId(req.params.id)) return res.status(400).json({ error: 'Invalid admin id' });
+        const result = await dbQuery(
+            "DELETE FROM admins WHERE id = ? AND role = 'doctor_admin'",
+            [req.params.id]
+        );
+        if (!result.affectedRows) return res.status(404).json({ error: 'Doctor admin not found' });
+        res.json({ message: 'Doctor admin deleted successfully' });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }

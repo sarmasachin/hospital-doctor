@@ -6,6 +6,18 @@
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="X-XSS-Protection" content="1; mode=block">
     <meta name="referrer" content="strict-origin-when-cross-origin">
+    <script>
+    (function () {
+        try {
+            var token = localStorage.getItem('medichek_auth_token');
+            var savedAdmin = localStorage.getItem('adminLoggedIn');
+            if (token && savedAdmin) {
+                JSON.parse(savedAdmin);
+                document.documentElement.classList.add('session-active');
+            }
+        } catch (e) { /* corrupt session data — show login */ }
+    })();
+    </script>
     <title>Admin Dashboard - LiveHospital</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="admin-login.css">
@@ -69,6 +81,15 @@
 
         .dashboard.active {
             display: block;
+        }
+
+        /* Restored session: no login flash on refresh (paired with <head> boot script) */
+        html.session-active #loginPage {
+            display: none !important;
+        }
+
+        html.session-active #dashboard {
+            display: block !important;
         }
 
         /* Sidebar */
@@ -1057,6 +1078,7 @@
                 <li><a href="#" data-section="contact-messages"><span class="icon">📩</span> Contact Messages</a></li>
                 <li><a href="#" data-section="hospital-admins"><span class="icon">🏥👤</span> Hospital Admins</a></li>
                 <li><a href="#" data-section="blood-admins"><span class="icon">🩸👤</span> Blood Admins</a></li>
+                <li><a href="#" data-section="doctor-admins"><span class="icon">🩺👤</span> Doctor Admins</a></li>
                 <li><a href="#" data-section="cities"><span class="icon">🏙️</span> Cities</a></li>
                 <li><a href="#" data-section="footer"><span class="icon">📋</span> Footer Settings</a></li>
                 <li><a href="#" data-section="hospital-card-label"><span class="icon">🏷️</span> हॉस्पिटल कार्ड लेबल</a></li>
@@ -1116,6 +1138,11 @@
                         <h3 id="statBloodAdmins">0</h3>
                         <p>Blood Admins</p>
                     </div>
+                    <div class="stat-card doctor-admins" style="border-top: 4px solid #0ea5e9;">
+                        <div class="icon">🩺👤</div>
+                        <h3 id="statDoctorAdmins">0</h3>
+                        <p>Doctor Admins</p>
+                    </div>
                     <div class="stat-card admins">
                         <div class="icon">👤</div>
                         <h3 id="statAdmins">0</h3>
@@ -1147,6 +1174,10 @@
                     <div class="quick-action-btn" onclick="showSection('blood-admins'); openModal('bloodAdmin')">
                         <div class="icon">🩸👤</div>
                         <p>Add Blood Admin</p>
+                    </div>
+                    <div class="quick-action-btn" onclick="showSection('doctor-admins'); openModal('doctorAdmin')">
+                        <div class="icon">🩺👤</div>
+                        <p>Add Doctor Admin</p>
                     </div>
                     <div class="quick-action-btn" onclick="refreshData()">
                         <div class="icon">🔄</div>
@@ -1389,6 +1420,46 @@
                 </div>
             </section>
 
+            <!-- Doctor Admins Section -->
+            <section class="content-section" id="section-doctor-admins">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>🩺👤 Doctor Admins</h2>
+                        <button class="btn-add" onclick="openModal('doctorAdmin')" style="background:#0ea5e9;">➕ Add Doctor Admin</button>
+                    </div>
+                    <p style="color:#9ca3af;font-size:0.9rem;margin:0 20px 16px;line-height:1.5;">
+                        डॉक्टर का login बनाएं — वे <a href="/doctor-admin" target="_blank" rel="noopener" style="color:#38bdf8;">/doctor-admin</a> पर email या mobile से लॉगिन करके status और profile अपडेट कर सकते हैं। Email/mobile सार्वजनिक साइट पर नहीं दिखता।
+                    </p>
+                    <div class="table-controls">
+                        <div class="search-box-admin">
+                            <input type="text" id="searchDoctorAdmins" placeholder="🔍 Doctor Admin खोजें..." onkeyup="searchTable('doctorAdmins')">
+                        </div>
+                        <div class="table-info" id="doctorAdminsInfo">Total: 0</div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Admin Name</th>
+                                    <th>Email</th>
+                                    <th>Doctor</th>
+                                    <th>Hospital</th>
+                                    <th>Mobile</th>
+                                    <th>Status</th>
+                                    <th>Panel</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="doctorAdminsTable">
+                                <!-- Loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-container" id="doctorAdminsPagination"></div>
+                </div>
+            </section>
+
             <!-- Cities Section (Search by City buttons on website) -->
             <section class="content-section" id="section-cities">
                 <div class="card">
@@ -1413,6 +1484,7 @@
                             </tbody>
                         </table>
                     </div>
+                    <div class="pagination-container" id="citiesPagination"></div>
                 </div>
             </section>
 
@@ -1610,6 +1682,7 @@
                                 </tbody>
                             </table>
                         </div>
+                        <div class="pagination-container" id="footerContactPagination"></div>
                     </div>
 
                     <!-- Important Tab -->
@@ -1632,6 +1705,7 @@
                                 </tbody>
                             </table>
                         </div>
+                        <div class="pagination-container" id="footerImportantPagination"></div>
                     </div>
 
                     <!-- Quick Links Tab -->
@@ -1655,6 +1729,7 @@
                                 </tbody>
                             </table>
                         </div>
+                        <div class="pagination-container" id="footerQuicklinksPagination"></div>
                     </div>
 
                     <!-- Follow Tab -->
@@ -1679,6 +1754,7 @@
                                 </tbody>
                             </table>
                         </div>
+                        <div class="pagination-container" id="footerFollowPagination"></div>
                     </div>
                 </div>
             </section>
@@ -2161,6 +2237,51 @@
                     </select>
                 </div>
                 <button type="submit" class="btn-submit" id="bloodAdminSubmitBtn">💾 Add Blood Admin</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Doctor Admin Modal -->
+    <div class="modal" id="doctorAdminModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="doctorAdminModalTitle">🩺👤 Add Doctor Admin</h2>
+                <button class="btn-close" onclick="closeModal('doctorAdmin')">&times;</button>
+            </div>
+            <form id="doctorAdminForm">
+                <input type="hidden" id="doctorAdminId">
+                <input type="hidden" id="doctorAdminDoctorId">
+                <div class="form-group" style="position: relative;">
+                    <label>Doctor *</label>
+                    <input type="text" id="doctorAdminDoctor" placeholder="डॉक्टर का नाम टाइप करें..." required autocomplete="off" onkeyup="showDoctorAdminDoctorSuggestions(this.value)" onfocus="showDoctorAdminDoctorSuggestions(this.value)">
+                    <div id="doctorAdminDoctorSuggestions" class="autocomplete-suggestions"></div>
+                    <small style="color:#6b7280;display:block;margin-top:6px;">पहले Doctors सेक्शन में डॉक्टर जोड़ें। एक डॉक्टर = एक login।</small>
+                </div>
+                <div class="form-group">
+                    <label>Admin Name *</label>
+                    <input type="text" id="doctorAdminName" placeholder="Display name (अक्सर डॉक्टर का नाम)" required>
+                </div>
+                <div class="form-group">
+                    <label>Email (Login) *</label>
+                    <input type="email" id="doctorAdminEmail" placeholder="doctor@gmail.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Password *</label>
+                    <input type="password" id="doctorAdminPassword" placeholder="Minimum 6 characters">
+                    <small style="color:#6b7280;display:block;margin-top:6px;">Edit पर खाली छोड़ें तो password नहीं बदलेगा।</small>
+                </div>
+                <div class="form-group">
+                    <label>Mobile (Login — optional)</label>
+                    <input type="tel" id="doctorAdminMobile" placeholder="9876543210">
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="doctorAdminStatus">
+                        <option value="active">✅ Active</option>
+                        <option value="inactive">❌ Inactive</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-submit" id="doctorAdminSubmitBtn" style="background:#0ea5e9;">💾 Add Doctor Admin</button>
             </form>
         </div>
     </div>

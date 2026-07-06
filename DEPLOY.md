@@ -62,7 +62,13 @@ Import schema:
 mysql -u livehospital_user -p hospital_db < /var/www/livehospital.org/server/database.sql
 cd /var/www/livehospital.org/server
 node setup-security.js
+node add-card-branding-column.js
+node migrate-doctor-admin.js
 ```
+
+> **Existing DB already deployed?** Run `node add-card-branding-column.js` once if hospital add shows `Unknown column 'card_branding' in 'field list'`. Run `node migrate-doctor-admin.js` once before enabling doctor admin login. Run `node add-doctor-fields-migration.js` if doctor profile update shows `Unknown column 'opd_days'`.
+>
+> **Doctor panel:** Super Admin → **Doctor Admins** से login बनाएं। Panel URL: `/doctor-admin`
 
 ---
 
@@ -188,6 +194,8 @@ mysqldump -u livehospital_user -p hospital_db > backup.sql
 cd /var/www/livehospital.org
 git pull   # or re-upload files
 cd server && npm install --production
+node add-card-branding-column.js
+node migrate-doctor-admin.js
 pm2 restart livehospital
 ```
 

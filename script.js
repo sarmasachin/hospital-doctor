@@ -66,6 +66,14 @@ const ITEMS_PER_PAGE = 10;
 let currentPage = 1;
 let currentPaginationType = 'hospitals'; // hospitals, doctors, blood
 
+function getTotalPages(totalItems) {
+    return Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
+}
+
+function clampPage(page, totalItems) {
+    return Math.min(Math.max(1, page), getTotalPages(totalItems));
+}
+
 // Data Loading State
 let isLoading = false;
 let dataLoadFailed = false;
@@ -665,10 +673,76 @@ function parseSavedView() {
         const data = JSON.parse(raw);
         if (data && typeof data === 'object' && data.type) return data;
     } catch (_) {
-        /* legacy plain strings like cityType — ignore */
+        /* legacy plain strings below */
     }
+    if (raw === 'cityType') {
+        return {
+            type: 'cityType',
+            cityId: localStorage.getItem('cityFilter') || '',
+            hospitalType: localStorage.getItem('hospitalType') || 'GOV'
+        };
+    }
+    if (raw === 'cityBlood') {
+        return { type: 'cityBlood', cityId: localStorage.getItem('cityFilter') || '' };
+    }
+    if (raw === 'bloodAll') return { type: 'bloodAll' };
     localStorage.removeItem('currentView');
     return null;
+}
+
+// ==================== BROWSER HISTORY (device back button) ====================
+let historyNavSuppress = false;
+
+function normalizeView(view) {
+    if (!view || typeof view !== 'object' || !view.type || view.type === 'home') {
+        return { type: 'home' };
+    }
+    return view;
+}
+
+function commitView(view) {
+    const v = normalizeView(view);
+    if (v.type === 'home') {
+        localStorage.removeItem('currentView');
+        currentPage = 1;
+    } else {
+        localStorage.setItem('currentView', JSON.stringify(v));
+    }
+    if (!historyNavSuppress && typeof history !== 'undefined' && history.pushState) {
+        const url = window.location.pathname + window.location.search;
+        history.pushState({ view: v, lhNav: true }, '', url);
+    }
+    return v;
+}
+
+function initSiteHistoryNavigation() {
+    if (typeof history === 'undefined' || !history.replaceState) return;
+    const url = window.location.pathname + window.location.search;
+    historyNavSuppress = true;
+    if (history.state && history.state.lhNav && history.state.view) {
+        applySavedView(history.state.view.type === 'home' ? null : history.state.view);
+    } else {
+        const saved = parseSavedView();
+        if (saved) {
+            history.replaceState({ view: saved, lhNav: true }, '', url);
+            applySavedView(saved);
+        } else {
+            history.replaceState({ view: { type: 'home' }, lhNav: true }, '', url);
+            currentPage = 1;
+            if (!dataLoadFailed) renderPage();
+        }
+    }
+    historyNavSuppress = false;
+}
+
+if (typeof window !== 'undefined') {
+    window.addEventListener('popstate', function (e) {
+        historyNavSuppress = true;
+        const view = (e.state && e.state.lhNav && e.state.view) ? e.state.view : { type: 'home' };
+        applySavedView(view.type === 'home' ? null : view);
+        historyNavSuppress = false;
+        window.scrollTo(0, 0);
+    });
 }
 
 function applySavedView(view) {
@@ -677,6 +751,7 @@ function applySavedView(view) {
         return;
     }
     if (!view || !view.type) {
+        currentPage = 1;
         renderPage();
         return;
     }
@@ -699,6 +774,18 @@ function applySavedView(view) {
         case 'cityFilter':
             filterByCity(view.cityId);
             break;
+        case 'doctorDetail':
+            showDoctorDetails(view.hospitalId, view.doctorId);
+            break;
+        case 'cityType':
+            filterByCityAndType(view.cityId, view.hospitalType);
+            break;
+        case 'cityBlood':
+            filterByCityBlood(view.cityId);
+            break;
+        case 'bloodAll':
+            showAllBloodUpdates();
+            break;
         default:
             renderPage();
     }
@@ -706,11 +793,15 @@ function applySavedView(view) {
 
 function restoreSavedView() {
     currentPage = 1;
+    historyNavSuppress = true;
     applySavedView(parseSavedView());
+    historyNavSuppress = false;
 }
 
 function rerenderCurrentView() {
+    historyNavSuppress = true;
     applySavedView(parseSavedView());
+    historyNavSuppress = false;
 }
 
 // Format last update time for display
@@ -880,7 +971,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     if (dataLoaded) {
-        restoreSavedView();
+        initSiteHistoryNavigation();
     }
     
     // Initialize location (async) — restore if user allowed earlier
@@ -928,50 +1019,55 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 // Generate pagination HTML
 function generatePaginationHTML(totalItems, currentPage, paginationType) {
-    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+    const totalPages = getTotalPages(totalItems);
+    const safePage = clampPage(currentPage, totalItems);
+    const startItem = totalItems === 0 ? 0 : (safePage - 1) * ITEMS_PER_PAGE + 1;
+    const endItem = Math.min(safePage * ITEMS_PER_PAGE, totalItems);
+
+    if (totalPages <= 1) {
+        if (totalItems > 0) {
+            return `<div class="pagination"><div class="pagination-info">कुल ${totalItems} हॉस्पिटल</div></div>`;
+        }
+        return '';
+    }
     
-    if (totalPages <= 1) return '';
-    
-    let html = '<div class="pagination">';
+    let html = '<div class="pagination" id="hospitalsPagination">';
     
     // Previous button
-    html += `<button class="page-btn ${currentPage === 1 ? 'disabled' : ''}" 
-             onclick="changePage(${currentPage - 1}, '${paginationType}')" 
-             ${currentPage === 1 ? 'disabled' : ''}>
+    html += `<button type="button" class="page-btn ${safePage === 1 ? 'disabled' : ''}" 
+             onclick="changePage(${safePage - 1}, '${paginationType}')" 
+             ${safePage === 1 ? 'disabled' : ''}>
              ◀ पिछला
              </button>`;
     
     // Page numbers
-    let startPage = Math.max(1, currentPage - 2);
-    let endPage = Math.min(totalPages, currentPage + 2);
+    let startPage = Math.max(1, safePage - 2);
+    let endPage = Math.min(totalPages, safePage + 2);
     
     if (startPage > 1) {
-        html += `<button class="page-btn" onclick="changePage(1, '${paginationType}')">1</button>`;
+        html += `<button type="button" class="page-btn" onclick="changePage(1, '${paginationType}')">1</button>`;
         if (startPage > 2) html += '<span class="page-dots">...</span>';
     }
     
     for (let i = startPage; i <= endPage; i++) {
-        html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" 
+        html += `<button type="button" class="page-btn ${i === safePage ? 'active' : ''}" 
                  onclick="changePage(${i}, '${paginationType}')">${i}</button>`;
     }
     
     if (endPage < totalPages) {
         if (endPage < totalPages - 1) html += '<span class="page-dots">...</span>';
-        html += `<button class="page-btn" onclick="changePage(${totalPages}, '${paginationType}')">${totalPages}</button>`;
+        html += `<button type="button" class="page-btn" onclick="changePage(${totalPages}, '${paginationType}')">${totalPages}</button>`;
     }
     
     // Next button
-    html += `<button class="page-btn ${currentPage === totalPages ? 'disabled' : ''}" 
-             onclick="changePage(${currentPage + 1}, '${paginationType}')" 
-             ${currentPage === totalPages ? 'disabled' : ''}>
+    html += `<button type="button" class="page-btn ${safePage === totalPages ? 'disabled' : ''}" 
+             onclick="changePage(${safePage + 1}, '${paginationType}')" 
+             ${safePage === totalPages ? 'disabled' : ''}>
              अगला ▶
              </button>`;
     
     html += '</div>';
     
-    // Page info
-    const startItem = (currentPage - 1) * ITEMS_PER_PAGE + 1;
-    const endItem = Math.min(currentPage * ITEMS_PER_PAGE, totalItems);
     html += `<div class="pagination-info">${startItem}-${endItem} of ${totalItems}</div>`;
     
     return html;
@@ -979,34 +1075,48 @@ function generatePaginationHTML(totalItems, currentPage, paginationType) {
 
 // Change page function
 function changePage(page, paginationType) {
-    currentPage = page;
+    const targetPage = parseInt(page, 10);
+    if (isNaN(targetPage) || targetPage < 1) return;
+
     currentPaginationType = paginationType;
     
     // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
     
-    // Re-render based on type
+    historyNavSuppress = true;
     const view = parseSavedView();
-    
+
     if (paginationType === 'hospitals') {
+        const hospitals = getHospitalsByDistance();
+        currentPage = clampPage(targetPage, hospitals.length);
         renderPage();
     } else if (paginationType === 'doctors') {
+        currentPage = targetPage;
         if (view && view.type === 'doctors') {
             showDoctorsByStatus(view.hospitalId, view.status);
         }
     } else if (paginationType === 'specialty') {
+        currentPage = targetPage;
         if (view && view.type === 'specialty') {
             filterBySpecialty(view.specialty);
         }
     } else if (paginationType === 'blood') {
+        currentPage = targetPage;
         if (view && view.type === 'blood') {
             showBloodUpdates(view.hospitalId);
         }
     } else if (paginationType === 'city') {
+        currentPage = targetPage;
         const cityFilter = localStorage.getItem('cityFilter');
         if (cityFilter) {
             filterByCity(cityFilter);
         }
+    }
+    historyNavSuppress = false;
+
+    const paginationEl = document.getElementById('hospitalsPagination');
+    if (paginationEl) {
+        paginationEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 }
 
@@ -1033,6 +1143,7 @@ function renderPage() {
     // Get hospitals (sorted by distance if location enabled)
     const hospitals = getHospitalsByDistance();
     const totalHospitals = hospitals.length;
+    currentPage = clampPage(currentPage, totalHospitals);
     const paginatedHospitals = getPaginatedItems(hospitals, currentPage);
     
     // Render Hospital Cards
@@ -1101,11 +1212,7 @@ const specialtyLabels = {
 
 // Filter by specialty
 function filterBySpecialty(specialty) {
-    // Save current view to localStorage
-    localStorage.setItem('currentView', JSON.stringify({
-        type: 'specialty',
-        specialty: specialty
-    }));
+    commitView({ type: 'specialty', specialty: specialty });
     
     currentPaginationType = 'specialty';
     
@@ -1194,7 +1301,7 @@ function getCityButtons() {
 
 // Show City Search (simple buttons from localStorage)
 function showCitySearch() {
-    localStorage.setItem('currentView', JSON.stringify({ type: 'city' }));
+    commitView({ type: 'city' });
     const grid = document.getElementById('hospitalsGrid');
     const list = getCityButtons();
     if (!list.length) {
@@ -1224,7 +1331,7 @@ function showCitySearch() {
 
 // Filter by City
 function filterByCity(cityValue) {
-    localStorage.setItem('currentView', JSON.stringify({ type: 'cityFilter', cityId: cityValue }));
+    commitView({ type: 'cityFilter', cityId: cityValue });
     localStorage.setItem('cityFilter', cityValue);
     currentPaginationType = 'city';
     
@@ -1286,10 +1393,7 @@ function showHospitalOverview(hospitalId) {
     const hospital = hospitalsData.find(h => h.id === hospitalId);
     if (!hospital) return;
 
-    localStorage.setItem('currentView', JSON.stringify({
-        type: 'hospital',
-        hospitalId: hospitalId
-    }));
+    commitView({ type: 'hospital', hospitalId: hospitalId });
 
     currentPaginationType = 'hospital';
 
@@ -1348,11 +1452,7 @@ function showHospitalOverview(hospitalId) {
 }
 
 function showBloodUpdates(hospitalId) {
-    // Save current view to localStorage
-    localStorage.setItem('currentView', JSON.stringify({
-        type: 'blood',
-        hospitalId: hospitalId
-    }));
+    commitView({ type: 'blood', hospitalId: hospitalId });
     
     currentPaginationType = 'blood';
     
@@ -2288,6 +2388,10 @@ function selectSmartSuggestion(type, id, hospitalId) {
 function filterByCityAndType(cityValue, hospitalType) {
     const city = getCityButtons().find(c => (c.value || '') === cityValue);
     if (!city) return;
+
+    commitView({ type: 'cityType', cityId: cityValue, hospitalType: hospitalType });
+    localStorage.setItem('cityFilter', cityValue);
+    localStorage.setItem('hospitalType', hospitalType);
     
     const filteredHospitals = hospitalsData.filter(h => 
         h.city === cityValue && h.type === hospitalType
@@ -2313,16 +2417,15 @@ function filterByCityAndType(cityValue, hospitalType) {
     }
     
     grid.innerHTML = html;
-    
-    localStorage.setItem('currentView', 'cityType');
-    localStorage.setItem('cityFilter', cityValue);
-    localStorage.setItem('hospitalType', hospitalType);
 }
 
 // Filter blood updates by city
 function filterByCityBlood(cityValue) {
     const city = getCityButtons().find(c => (c.value || '') === cityValue);
     if (!city) return;
+
+    commitView({ type: 'cityBlood', cityId: cityValue });
+    localStorage.setItem('cityFilter', cityValue);
     
     const cityHospitals = hospitalsData.filter(h => h.city === cityValue);
     const hospitalIds = cityHospitals.map(h => h.id);
@@ -2370,13 +2473,11 @@ function filterByCityBlood(cityValue) {
     }
     
     grid.innerHTML = html;
-    
-    localStorage.setItem('currentView', 'cityBlood');
-    localStorage.setItem('cityFilter', cityId);
 }
 
 // Show all blood updates
 function showAllBloodUpdates() {
+    commitView({ type: 'bloodAll' });
     const allBloodRequests = getActiveBloodRequests();
     const grid = document.getElementById('hospitalsGrid');
     
@@ -2419,8 +2520,6 @@ function showAllBloodUpdates() {
     }
     
     grid.innerHTML = html;
-    
-    localStorage.setItem('currentView', 'bloodAll');
 }
 
 // Highlight matching text
@@ -2626,6 +2725,8 @@ function showDoctorDetails(hospitalId, doctorId) {
     if (!hospital) return;
     const doctor = hospital.doctors.find(d => d.id === doctorId);
     if (!doctor) return;
+
+    commitView({ type: 'doctorDetail', hospitalId: hospitalId, doctorId: doctorId });
     
     const statusLabels = {
         'available': 'उपलब्ध',
@@ -2794,16 +2895,12 @@ function showAllDoctors(hospitalId) {
 
 // Show doctors by specific status (replaces hospital cards with doctor cards)
 function showDoctorsByStatus(hospitalId, status) {
-    // Save current view to localStorage
-    localStorage.setItem('currentView', JSON.stringify({
-        type: 'doctors',
-        hospitalId: hospitalId,
-        status: status
-    }));
+    commitView({ type: 'doctors', hospitalId: hospitalId, status: status });
     
     currentPaginationType = 'doctors';
     
     const hospital = hospitalsData.find(h => h.id === hospitalId);
+    if (!hospital) return;
     const doctorsByStatus = status === 'all'
         ? hospital.doctors
         : hospital.doctors.filter(d => d.status === status);
@@ -2853,12 +2950,14 @@ function scrollToTop() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// Go back to hospital cards (Home)
+// Go back one step (device back + ← वापस / Home buttons)
 function goBackToHospitals() {
-    // Clear saved view and reset page
-    localStorage.removeItem('currentView');
-    currentPage = 1;
-    renderPage();
+    const current = history.state && history.state.view;
+    if (!current || current.type === 'home') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+    }
+    history.back();
 }
 
 // Smooth scroll for navigation links

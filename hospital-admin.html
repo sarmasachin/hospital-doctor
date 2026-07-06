@@ -5,6 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <script>
+    (function () {
+        try {
+            var token = localStorage.getItem('medichek_auth_token');
+            var savedAdmin = localStorage.getItem('adminLoggedIn');
+            if (!token || !savedAdmin) return;
+            var admin = JSON.parse(savedAdmin);
+            var role = admin && admin.role;
+            var ok = role === 'superadmin' ||
+                ((role === 'hospital_admin' || role === 'admin') && admin.hospital_id);
+            if (ok) document.documentElement.classList.add('session-active');
+        } catch (e) { /* corrupt session data — show login */ }
+    })();
+    </script>
     <title>Hospital Admin Dashboard - LiveHospital</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="admin-login.css">
@@ -710,6 +724,15 @@
             display: flex;
         }
 
+        /* Restored session: no login flash on refresh (paired with <head> boot script) */
+        html.session-active #loginPage {
+            display: none !important;
+        }
+
+        html.session-active #dashboard {
+            display: flex !important;
+        }
+
         /* Sidebar */
         .sidebar {
             width: 260px;
@@ -1157,9 +1180,10 @@
                     </p>
                     <div class="form-group">
                         <label>डॉक्टर्स चुनें</label>
-                        <div id="bulkDoctorsList" style="max-height: 300px; overflow-y: auto; background: #0d1117; padding: 15px; border-radius: 8px;">
+                        <div id="bulkDoctorsList" style="background: #0d1117; padding: 15px; border-radius: 8px;">
                             <!-- Checkboxes loaded dynamically -->
                         </div>
+                        <div class="pagination-box" id="bulkPaginationBox"></div>
                     </div>
                     <div class="form-group">
                         <label>नया स्टेटस चुनें</label>
@@ -1256,6 +1280,8 @@
         let filteredDoctors = [];
         let currentDoctorPage = 1;
         const DOCTORS_PER_PAGE = 20;
+        const BULK_PER_PAGE = 20;
+        let currentBulkPage = 1;
 
         // All hospitals list
         let allHospitals = [];
@@ -1283,6 +1309,60 @@
                 h.name.toLowerCase().includes(input.toLowerCase()) ||
                 input.toLowerCase().includes(h.name.toLowerCase())
             );
+        }
+
+        function resolveHospitalForAdmin(admin, usernameHint) {
+            if (!admin) return null;
+            if ((admin.role === 'hospital_admin' || admin.role === 'admin') && admin.hospital_id) {
+                return allHospitals.find(h => h.id === admin.hospital_id) || null;
+            }
+            if (admin.role === 'superadmin') {
+                return findHospital(usernameHint || admin.username || '');
+            }
+            return null;
+        }
+
+        function showHospitalDashboard(hospital) {
+            document.documentElement.classList.add('session-active');
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('dashboard').classList.add('active');
+            document.getElementById('hospitalNameDisplay').textContent = hospital.name;
+            document.getElementById('sidebarHospitalName').textContent = hospital.name;
+            currentHospital = { id: hospital.id, name: hospital.name };
+            initHospitalAdminSectionHistory();
+            loadDoctors();
+        }
+
+        async function checkLoginState() {
+            const token = typeof getAuthToken === 'function' ? getAuthToken() : null;
+            const savedAdmin = localStorage.getItem('adminLoggedIn');
+            if (!token || !savedAdmin) {
+                document.documentElement.classList.remove('session-active');
+                return false;
+            }
+            try {
+                const admin = JSON.parse(savedAdmin);
+                const allowedRoles = ['hospital_admin', 'admin', 'superadmin'];
+                if (!allowedRoles.includes(admin.role)) {
+                    document.documentElement.classList.remove('session-active');
+                    return false;
+                }
+                if (admin.role !== 'superadmin' && !admin.hospital_id) {
+                    document.documentElement.classList.remove('session-active');
+                    return false;
+                }
+                await loadHospitalsForLogin();
+                const hospital = resolveHospitalForAdmin(admin);
+                if (!hospital) {
+                    document.documentElement.classList.remove('session-active');
+                    return false;
+                }
+                showHospitalDashboard(hospital);
+                return true;
+            } catch (e) {
+                document.documentElement.classList.remove('session-active');
+                return false;
+            }
         }
 
         function showFieldError(inputId, errorId, iconId, message) {
@@ -1400,6 +1480,7 @@
                     hospital = allHospitals.find(h => h.id === data.admin.hospital_id);
                 } else {
                     clearAuthSession();
+                    document.documentElement.classList.remove('session-active');
                     document.getElementById('loginError').style.display = 'block';
                     document.getElementById('loginError').textContent = 'यह लॉगिन Hospital Admin के लिए नहीं है!';
                     return;
@@ -1407,18 +1488,14 @@
 
                 if (!hospital) {
                     clearAuthSession();
+                    document.documentElement.classList.remove('session-active');
                     document.getElementById('loginError').style.display = 'block';
                     document.getElementById('loginError').textContent = 'हॉस्पिटल नहीं मिला या एक्सेस नहीं है!';
                     return;
                 }
 
                 document.getElementById('loginError').style.display = 'none';
-                currentHospital = { id: hospital.id, name: hospital.name };
-                document.getElementById('loginPage').style.display = 'none';
-                document.getElementById('dashboard').classList.add('active');
-                document.getElementById('hospitalNameDisplay').textContent = hospital.name;
-                document.getElementById('sidebarHospitalName').textContent = hospital.name;
-                loadDoctors();
+                showHospitalDashboard(hospital);
             } catch (error) {
                 document.getElementById('loginError').style.display = 'block';
                 document.getElementById('loginError').textContent = typeof getNetworkErrorMessage === 'function'
@@ -1431,6 +1508,7 @@
         function logout() {
             currentHospital = null;
             clearAuthSession();
+            document.documentElement.classList.remove('session-active');
             document.getElementById('dashboard').classList.remove('active');
             document.getElementById('loginPage').style.display = 'flex';
             document.getElementById('loginPassword').value = '';
@@ -1631,7 +1709,29 @@
         }
 
         // Show section
-        function showSection(sectionId) {
+        let hospitalAdminHistorySuppress = false;
+
+        function initHospitalAdminSectionHistory() {
+            if (typeof history === 'undefined' || !history.replaceState) return;
+            const dashboard = document.getElementById('dashboard');
+            if (!dashboard || !dashboard.classList.contains('active')) return;
+            const section = (history.state && history.state.lhHospitalSection) || 'dashboard';
+            hospitalAdminHistorySuppress = true;
+            showSection(section, { fromHistory: true });
+            history.replaceState({ lhHospitalSection: section }, '', window.location.pathname + window.location.search);
+            hospitalAdminHistorySuppress = false;
+        }
+
+        window.addEventListener('popstate', function (e) {
+            const dashboard = document.getElementById('dashboard');
+            if (!dashboard || !dashboard.classList.contains('active')) return;
+            const section = (e.state && e.state.lhHospitalSection) ? e.state.lhHospitalSection : 'dashboard';
+            hospitalAdminHistorySuppress = true;
+            showSection(section, { fromHistory: true });
+            hospitalAdminHistorySuppress = false;
+        });
+
+        function showSection(sectionId, options) {
             // Hide all sections
             document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
             
@@ -1645,6 +1745,14 @@
             document.querySelectorAll('.sidebar-menu a').forEach(a => a.classList.remove('active'));
             const activeLink = document.querySelector(`.sidebar-menu a[onclick="showSection('${sectionId}')"]`);
             if (activeLink) activeLink.classList.add('active');
+
+            if ((!options || !options.fromHistory) && !hospitalAdminHistorySuppress && typeof history !== 'undefined' && history.pushState) {
+                history.pushState(
+                    { lhHospitalSection: sectionId },
+                    '',
+                    window.location.pathname + window.location.search
+                );
+            }
             
             closeSidebar();
         }
@@ -1889,12 +1997,74 @@
         // Render bulk list
         function renderBulkList() {
             const container = document.getElementById('bulkDoctorsList');
-            container.innerHTML = doctors.map(d => `
+            const paginationBox = document.getElementById('bulkPaginationBox');
+            if (!container) return;
+
+            if (doctors.length === 0) {
+                container.innerHTML = '<p style="color:#9ca3af;text-align:center;padding:20px;">कोई डॉक्टर नहीं</p>';
+                if (paginationBox) paginationBox.innerHTML = '';
+                return;
+            }
+
+            const totalPages = Math.ceil(doctors.length / BULK_PER_PAGE);
+            if (currentBulkPage > totalPages) currentBulkPage = Math.max(1, totalPages);
+            const start = (currentBulkPage - 1) * BULK_PER_PAGE;
+            const paginatedDoctors = doctors.slice(start, start + BULK_PER_PAGE);
+
+            container.innerHTML = paginatedDoctors.map(d => `
                 <label style="display: block; padding: 8px; cursor: pointer;">
                     <input type="checkbox" value="${d.id}" style="margin-right: 10px;">
                     ${d.name} - ${d.specialty} (${getStatusLabel(d.status)})
                 </label>
             `).join('');
+
+            renderBulkPagination(totalPages);
+        }
+
+        function renderBulkPagination(totalPages) {
+            const paginationBox = document.getElementById('bulkPaginationBox');
+            if (!paginationBox) return;
+            if (totalPages <= 1) {
+                paginationBox.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+            html += `<button type="button" class="page-btn-hospital" onclick="changeBulkPage(${currentBulkPage - 1})" ${currentBulkPage === 1 ? 'disabled' : ''}>← पिछला</button>`;
+
+            const maxVisible = 5;
+            let startPage = Math.max(1, currentBulkPage - Math.floor(maxVisible / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+            if (endPage - startPage < maxVisible - 1) {
+                startPage = Math.max(1, endPage - maxVisible + 1);
+            }
+
+            if (startPage > 1) {
+                html += `<button type="button" class="page-btn-hospital" onclick="changeBulkPage(1)">1</button>`;
+                if (startPage > 2) html += '<span class="page-dots-hospital">...</span>';
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<button type="button" class="page-btn-hospital ${i === currentBulkPage ? 'active' : ''}" onclick="changeBulkPage(${i})">${i}</button>`;
+            }
+
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) html += '<span class="page-dots-hospital">...</span>';
+                html += `<button type="button" class="page-btn-hospital" onclick="changeBulkPage(${totalPages})">${totalPages}</button>`;
+            }
+
+            html += `<button type="button" class="page-btn-hospital" onclick="changeBulkPage(${currentBulkPage + 1})" ${currentBulkPage === totalPages ? 'disabled' : ''}>अगला →</button>`;
+            html += `<span class="page-info-hospital">पेज ${currentBulkPage} / ${totalPages}</span>`;
+            paginationBox.innerHTML = html;
+        }
+
+        function changeBulkPage(page) {
+            const totalPages = Math.ceil(doctors.length / BULK_PER_PAGE);
+            if (page < 1 || page > totalPages) return;
+            currentBulkPage = page;
+            renderBulkList();
+            const container = document.getElementById('bulkDoctorsList');
+            if (container) container.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         // Bulk update status
@@ -1934,7 +2104,9 @@
 
         // Initialize
         if (typeof initAdminSessionExpiredNotice === 'function') initAdminSessionExpiredNotice();
-        loadHospitalsForLogin();
+        checkLoginState().then(function (restored) {
+            if (!restored) loadHospitalsForLogin();
+        });
     </script>
 </body>
 </html>

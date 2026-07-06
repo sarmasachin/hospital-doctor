@@ -23,11 +23,83 @@ function signToken(admin) {
             id: admin.id,
             username: admin.username,
             role: admin.role,
-            hospital_id: admin.hospital_id || null
+            hospital_id: admin.hospital_id || null,
+            doctor_id: admin.doctor_id || null
         },
         JWT_SECRET,
         { expiresIn: JWT_EXPIRES_IN }
     );
+}
+
+const ADMIN_LOGIN_SELECT = 'id, username, password, role, hospital_id, doctor_id, name, status, mobile';
+
+function normalizeMobileDigits(value) {
+    const digits = String(value || '').replace(/\D/g, '');
+    if (digits.length >= 10) return digits.slice(-10);
+    return digits;
+}
+
+function mobileLookupVariants(value) {
+    const last10 = normalizeMobileDigits(value);
+    if (last10.length !== 10) return { last10: '', variants: [] };
+    const variants = [...new Set([last10, '91' + last10, '+91' + last10, '0' + last10])];
+    return { last10, variants };
+}
+
+async function findAdminForLogin(dbQuery, identifier) {
+    const id = String(identifier || '').trim();
+    if (!id) return null;
+
+    if (id.includes('@')) {
+        const rows = await dbQuery(
+            `SELECT ${ADMIN_LOGIN_SELECT} FROM admins WHERE LOWER(username) = ? LIMIT 1`,
+            [id.toLowerCase()]
+        );
+        return rows[0] || null;
+    }
+
+    const { last10, variants } = mobileLookupVariants(id);
+    if (last10) {
+        const placeholders = variants.map(() => '?').join(', ');
+        const rows = await dbQuery(
+            `SELECT ${ADMIN_LOGIN_SELECT} FROM admins
+             WHERE mobile IS NOT NULL AND (
+                mobile IN (${placeholders})
+                OR RIGHT(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(mobile, ' ', ''), '-', ''), '+', ''), '.', ''), '(', ''), 10) = ?
+             )`,
+            [...variants, last10]
+        );
+        if (rows.length > 1) return { _ambiguous: true };
+        if (rows.length === 1) return rows[0];
+    }
+
+    const rows = await dbQuery(
+        `SELECT ${ADMIN_LOGIN_SELECT} FROM admins WHERE username = ? LIMIT 1`,
+        [id]
+    );
+    return rows[0] || null;
+}
+
+async function validateDoctorAdminAccount(dbQuery, admin) {
+    if (!admin || admin.role !== 'doctor_admin') {
+        return { ok: true };
+    }
+    if (!admin.doctor_id) {
+        return {
+            ok: false,
+            status: 403,
+            error: 'Doctor account is not linked to a profile. Contact super admin.'
+        };
+    }
+    const rows = await dbQuery('SELECT id, hospital_id FROM doctors WHERE id = ? LIMIT 1', [admin.doctor_id]);
+    if (!rows.length) {
+        return {
+            ok: false,
+            status: 403,
+            error: 'Doctor profile not found. Contact super admin.'
+        };
+    }
+    return { ok: true, hospital_id: rows[0].hospital_id };
 }
 
 function extractToken(req) {
@@ -86,6 +158,36 @@ function requireBloodManager(req, res, next) {
     res.status(403).json({ error: 'Blood admin access required' });
 }
 
+function requireDoctorSelf(req, res, next) {
+    const role = req.admin && req.admin.role;
+    if (role !== 'doctor_admin') {
+        res.status(403).json({ error: 'Doctor access required' });
+        return;
+    }
+    if (!req.admin.doctor_id) {
+        res.status(403).json({ error: 'Doctor account not linked to a profile' });
+        return;
+    }
+    next();
+}
+
+function requireDoctorSelfAccess(req, res, next) {
+    if (req.admin.role === 'superadmin') {
+        next();
+        return;
+    }
+    if (req.admin.role !== 'doctor_admin' || !req.admin.doctor_id) {
+        res.status(403).json({ error: 'Doctor access required' });
+        return;
+    }
+    const doctorId = parseInt(req.params.id, 10);
+    if (!Number.isFinite(doctorId) || doctorId !== req.admin.doctor_id) {
+        res.status(403).json({ error: 'Access denied for this doctor profile' });
+        return;
+    }
+    next();
+}
+
 function requireHospitalIdAccess(hospitalId) {
     const hid = parseInt(hospitalId, 10);
     return (req, res, next) => {
@@ -106,11 +208,16 @@ module.exports = {
     hashPassword,
     verifyPassword,
     signToken,
+    findAdminForLogin,
+    validateDoctorAdminAccount,
+    normalizeMobileDigits,
     authenticate,
     requireSuperAdmin,
     requireAdminRole,
     requireDoctorManager,
     requireBloodManager,
+    requireDoctorSelf,
+    requireDoctorSelfAccess,
     requireHospitalIdAccess,
     JWT_SECRET
 };

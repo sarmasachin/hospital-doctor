@@ -37,7 +37,7 @@ async function main() {
     }
 
     await conn.query(
-        "ALTER TABLE admins MODIFY COLUMN role ENUM('superadmin', 'admin', 'hospital_admin', 'blood_admin') NOT NULL DEFAULT 'hospital_admin'"
+        "ALTER TABLE admins MODIFY COLUMN role ENUM('superadmin', 'admin', 'hospital_admin', 'blood_admin', 'doctor_admin') NOT NULL DEFAULT 'hospital_admin'"
     );
     console.log('Updated role enum');
 

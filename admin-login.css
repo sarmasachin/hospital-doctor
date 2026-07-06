@@ -42,6 +42,10 @@
     background: linear-gradient(145deg, rgba(239, 68, 68, 0.35), rgba(185, 28, 28, 0.12));
 }
 
+.theme-doctor .login-brand {
+    background: linear-gradient(145deg, rgba(14, 165, 233, 0.38), rgba(2, 132, 199, 0.14));
+}
+
 .login-brand-mark {
     width: 56px;
     height: 56px;
@@ -133,6 +137,8 @@
 .theme-hospital .login-card-head h2 { color: #4ade80; }
 .theme-blood .login-logo h1,
 .theme-blood .login-card-head h2 { color: #f87171; }
+.theme-doctor .login-logo h1,
+.theme-doctor .login-card-head h2 { color: #38bdf8; }
 
 .login-error {
     background: rgba(239, 68, 68, 0.12);

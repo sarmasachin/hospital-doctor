@@ -67,6 +67,13 @@ async function main() {
             console.log('⏭️ doctors.sub_specialization pehle se hai.');
         }
 
+        if (!names.includes('opd_days')) {
+            await run("ALTER TABLE doctors ADD COLUMN opd_days VARCHAR(100) DEFAULT 'Mon,Tue,Wed,Thu,Fri,Sat'");
+            console.log('✅ doctors.opd_days column add ho gaya.');
+        } else {
+            console.log('⏭️ doctors.opd_days pehle se hai.');
+        }
+
         console.log('Done. Ab server restart karke doctor card par data dikhega.');
     } catch (e) {
         console.error('Error:', e.message);

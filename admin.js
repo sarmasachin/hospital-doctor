@@ -26,9 +26,11 @@ let bloodRequests = [];
 let admins = [];
 let hospitalAdmins = [];
 let bloodAdmins = [];
+let doctorAdmins = [];
 let cities = [];
 let editingHospitalAdminId = null;
 let editingBloodAdminId = null;
+let editingDoctorAdminId = null;
 let editingCityButtonId = null;
 
 // Pagination state
@@ -38,7 +40,13 @@ let currentPages = {
     blood: 1,
     hospitalAdmins: 1,
     bloodAdmins: 1,
+    doctorAdmins: 1,
     admins: 1,
+    cities: 1,
+    footerContact: 1,
+    footerImportant: 1,
+    footerQuicklinks: 1,
+    footerFollow: 1,
     'contact-messages': 1
 };
 
@@ -49,6 +57,7 @@ let filteredData = {
     blood: [],
     hospitalAdmins: [],
     bloodAdmins: [],
+    doctorAdmins: [],
     admins: []
 };
 
@@ -84,6 +93,7 @@ function checkLoginState() {
     if (savedAdmin && token) {
         try {
             currentAdmin = JSON.parse(savedAdmin);
+            document.documentElement.classList.add('session-active');
             document.getElementById('loginPage').style.display = 'none';
             document.getElementById('dashboard').classList.add('active');
             document.getElementById('adminName').textContent = currentAdmin.username;
@@ -93,13 +103,16 @@ function checkLoginState() {
             localStorage.removeItem('adminLoggedIn');
         }
     }
+    document.documentElement.classList.remove('session-active');
     return false;
 }
 
 // Run on page load
 document.addEventListener('DOMContentLoaded', function() {
     if (typeof initAdminSessionExpiredNotice === 'function') initAdminSessionExpiredNotice();
-    checkLoginState();
+    if (checkLoginState()) {
+        initAdminSectionHistory();
+    }
 });
 
 document.getElementById('loginForm').addEventListener('submit', async function(e) {
@@ -129,12 +142,14 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
             currentAdmin = data.admin;
             saveAuthSession(data.token, currentAdmin);
             
+            document.documentElement.classList.add('session-active');
             document.getElementById('loginPage').style.display = 'none';
             document.getElementById('dashboard').classList.add('active');
             document.getElementById('adminName').textContent = currentAdmin.username;
             
             // Load all data
             await loadAllData();
+            initAdminSectionHistory();
             showAlert('Login successful!', 'success');
         } else {
             document.getElementById('loginError').style.display = 'block';
@@ -153,6 +168,7 @@ function logout() {
     currentAdmin = null;
     clearAuthSession();
     
+    document.documentElement.classList.remove('session-active');
     document.getElementById('dashboard').classList.remove('active');
     document.getElementById('loginPage').style.display = 'flex';
     document.getElementById('loginUsername').value = '';
@@ -184,7 +200,9 @@ function generatePagination(type, totalItems, currentPage) {
     let html = '';
     
     // Previous button
-    html += `<button class="page-btn" onclick="changePage('${type}', ${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>← Prev</button>`;
+    html += `<button type="button" class="page-btn ${currentPage === 1 ? 'disabled' : ''}" 
+             onclick="changePage('${type}', ${currentPage - 1})" 
+             ${currentPage === 1 ? 'disabled' : ''}>← Prev</button>`;
     
     // Page numbers
     const maxVisiblePages = 5;
@@ -243,8 +261,26 @@ function changePage(type, page) {
         case 'bloodAdmins':
             renderBloodAdminsTableWithPagination();
             break;
+        case 'doctorAdmins':
+            renderDoctorAdminsTableWithPagination();
+            break;
         case 'admins':
             renderAdminsTableWithPagination();
+            break;
+        case 'cities':
+            renderCitiesTable();
+            break;
+        case 'footerContact':
+            renderContactTable();
+            break;
+        case 'footerImportant':
+            renderImportantTable();
+            break;
+        case 'footerQuicklinks':
+            renderQuicklinksTable();
+            break;
+        case 'footerFollow':
+            renderFollowTable();
             break;
     }
 }
@@ -257,6 +293,7 @@ function searchTable(type) {
         blood: 'searchBlood',
         hospitalAdmins: 'searchHospitalAdmins',
         bloodAdmins: 'searchBloodAdmins',
+        doctorAdmins: 'searchDoctorAdmins',
         admins: 'searchAdmins'
     };
     
@@ -271,6 +308,7 @@ function searchTable(type) {
         case 'blood': originalData = bloodRequests; break;
         case 'hospitalAdmins': originalData = hospitalAdmins; break;
         case 'bloodAdmins': originalData = bloodAdmins; break;
+        case 'doctorAdmins': originalData = doctorAdmins; break;
         case 'admins': originalData = admins; break;
     }
     
@@ -298,6 +336,7 @@ async function loadAllData() {
         loadAdmins(),
         loadHospitalAdmins(),
         loadBloodAdmins(),
+        loadDoctorAdmins(),
         loadCities(),
         loadContactMessages(),
         loadFooterData(),
@@ -404,6 +443,26 @@ async function loadBloodAdmins() {
     }
 }
 
+async function loadDoctorAdmins() {
+    try {
+        const response = await authFetch(`${API_URL}/doctor-admins`);
+        if (!response.ok) {
+            showAdminError(null, await getApiFailureMessage(response, 'डॉक्टर एडमिन लोड नहीं हो सके'));
+            doctorAdmins = [];
+            renderDoctorAdminsTable();
+            return;
+        }
+        doctorAdmins = await response.json();
+        renderDoctorAdminsTable();
+        updateDoctorAdminStats();
+    } catch (error) {
+        console.error('Error loading doctor admins:', error);
+        doctorAdmins = [];
+        renderDoctorAdminsTable();
+        showAdminError(error, 'डॉक्टर एडमिन लोड नहीं हो सके');
+    }
+}
+
 const CITY_BUTTONS_KEY = 'cityButtons';
 
 function loadCities() {
@@ -428,6 +487,8 @@ async function loadStats() {
         document.getElementById('statBlood').textContent = stats.blood_requests || 0;
         document.getElementById('statHospitalAdmins').textContent = hospitalAdmins.length || 0;
         document.getElementById('statBloodAdmins').textContent = bloodAdmins.length || 0;
+        const statDoctorAdmins = document.getElementById('statDoctorAdmins');
+        if (statDoctorAdmins) statDoctorAdmins.textContent = doctorAdmins.length || 0;
         document.getElementById('statAdmins').textContent = admins.length || 0;
     } catch (error) {
         console.error('Error loading stats:', error);
@@ -669,6 +730,52 @@ function renderBloodAdminsTableWithPagination() {
     generatePagination('bloodAdmins', data.length, currentPages.bloodAdmins);
 }
 
+function renderDoctorAdminsTable() {
+    filteredData.doctorAdmins = [...doctorAdmins];
+    renderDoctorAdminsTableWithPagination();
+}
+
+function renderDoctorAdminsTableWithPagination() {
+    const tbody = document.getElementById('doctorAdminsTable');
+    if (!tbody) return;
+
+    const data = filteredData.doctorAdmins;
+    const paginatedData = getPaginatedData(data, currentPages.doctorAdmins);
+
+    const infoElement = document.getElementById('doctorAdminsInfo');
+    if (infoElement) infoElement.textContent = `Total: ${data.length} doctor logins`;
+
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#9ca3af;padding:30px;">कोई Doctor Admin नहीं मिला। पहले Doctors सेक्शन में डॉक्टर जोड़ें, फिर यहाँ login बनाएं।</td></tr>';
+        document.getElementById('doctorAdminsPagination').innerHTML = '';
+        return;
+    }
+
+    tbody.innerHTML = paginatedData.map(a => {
+        const doctorLabel = a.doctor_name
+            ? `${a.doctor_name}${a.specialty ? ' (' + a.specialty + ')' : ''}`
+            : (a.doctor_id ? 'ID ' + a.doctor_id : '-');
+        return `
+            <tr>
+                <td>${a.id}</td>
+                <td><strong>${escapeHtml(a.name)}</strong></td>
+                <td>${escapeHtml(a.email)}</td>
+                <td>${escapeHtml(doctorLabel)}</td>
+                <td>${escapeHtml(a.hospital_name || '-')}</td>
+                <td>${escapeHtml(a.mobile || '-')}</td>
+                <td><span class="status-badge ${a.status === 'active' ? 'available' : 'leave'}">${a.status === 'active' ? '✅ Active' : '❌ Inactive'}</span></td>
+                <td><a href="/doctor-admin" target="_blank" rel="noopener" style="color:#38bdf8;font-size:0.85rem;">/doctor-admin</a></td>
+                <td class="action-btns">
+                    <button class="btn-edit" onclick="editDoctorAdmin(${a.id})">✏️</button>
+                    <button class="btn-delete" onclick="deleteDoctorAdmin(${a.id})">🗑️</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    generatePagination('doctorAdmins', data.length, currentPages.doctorAdmins);
+}
+
 function getStatusLabel(status) {
     const labels = {
         'available': 'उपलब्ध',
@@ -720,6 +827,12 @@ function closeModal(type) {
         document.getElementById('bloodAdminModalTitle').textContent = '🩸👤 Add Blood Admin';
         document.getElementById('bloodAdminSubmitBtn').textContent = '💾 Add Blood Admin';
     }
+    if (type === 'doctorAdmin') {
+        editingDoctorAdminId = null;
+        document.getElementById('doctorAdminDoctorId').value = '';
+        document.getElementById('doctorAdminModalTitle').textContent = '🩺👤 Add Doctor Admin';
+        document.getElementById('doctorAdminSubmitBtn').textContent = '💾 Add Doctor Admin';
+    }
     // Reset city button modal state
     if (type === 'cityButton') {
         editingCityButtonId = null;
@@ -742,6 +855,30 @@ document.querySelectorAll('.modal .modal-content').forEach(content => {
 });
 
 // ==================== SIDEBAR NAVIGATION ====================
+let adminHistorySuppress = false;
+
+function initAdminSectionHistory() {
+    if (typeof history === 'undefined' || !history.replaceState) return;
+    const dashboard = document.getElementById('dashboard');
+    if (!dashboard || !dashboard.classList.contains('active')) return;
+    const section = (history.state && history.state.lhAdminSection) || 'dashboard';
+    adminHistorySuppress = true;
+    showSection(section, { fromHistory: true });
+    history.replaceState({ lhAdminSection: section }, '', window.location.pathname + window.location.search);
+    adminHistorySuppress = false;
+}
+
+if (typeof window !== 'undefined') {
+    window.addEventListener('popstate', function (e) {
+        const dashboard = document.getElementById('dashboard');
+        if (!dashboard || !dashboard.classList.contains('active')) return;
+        const section = (e.state && e.state.lhAdminSection) ? e.state.lhAdminSection : 'dashboard';
+        adminHistorySuppress = true;
+        showSection(section, { fromHistory: true });
+        adminHistorySuppress = false;
+    });
+}
+
 document.querySelectorAll('.sidebar-menu a').forEach(link => {
     link.addEventListener('click', function(e) {
         if (this.dataset.section) {
@@ -755,7 +892,7 @@ document.querySelectorAll('.sidebar-menu a').forEach(link => {
     });
 });
 
-function showSection(sectionId) {
+function showSection(sectionId, options) {
     // Hide all sections
     document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
     
@@ -781,6 +918,7 @@ function showSection(sectionId) {
         'contact-messages': '📩 Contact Messages',
         'hospital-admins': '🏥👤 Hospital Admins',
         'blood-admins': '🩸👤 Blood Admins',
+        'doctor-admins': '🩺👤 Doctor Admins',
         'cities': '🏙️ Cities',
         'site-settings': '⚙️ Site Settings (SEO, backup, caching)',
         'footer': '📋 Footer Settings',
@@ -800,6 +938,14 @@ function showSection(sectionId) {
         loadSiteSettingsAdmin();
     }
     document.getElementById('pageTitle').textContent = titles[sectionId] || 'Dashboard';
+
+    if ((!options || !options.fromHistory) && !adminHistorySuppress && typeof history !== 'undefined' && history.pushState) {
+        history.pushState(
+            { lhAdminSection: sectionId },
+            '',
+            window.location.pathname + window.location.search
+        );
+    }
     
     closeSidebar();
 }
@@ -1109,6 +1255,71 @@ document.getElementById('bloodAdminForm').addEventListener('submit', async funct
     }
 });
 
+// Add/Edit Doctor Admin
+document.getElementById('doctorAdminForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const doctorId = parseInt(document.getElementById('doctorAdminDoctorId').value, 10);
+    const data = {
+        name: trimVal('doctorAdminName'),
+        email: trimVal('doctorAdminEmail'),
+        password: document.getElementById('doctorAdminPassword').value || '',
+        doctor_id: Number.isFinite(doctorId) && doctorId > 0 ? doctorId : undefined,
+        doctor_name: trimVal('doctorAdminDoctor'),
+        mobile: trimVal('doctorAdminMobile'),
+        status: document.getElementById('doctorAdminStatus').value
+    };
+
+    if (!data.name) {
+        showFieldError('Admin name is required');
+        return;
+    }
+    if (!data.email) {
+        showFieldError('Email is required');
+        return;
+    }
+    if (!data.doctor_id && !data.doctor_name) {
+        showFieldError('Doctor select करें (नाम टाइप करके सूची से चुनें)');
+        return;
+    }
+    if (!editingDoctorAdminId && (!data.password || data.password.length < 6)) {
+        showFieldError('Password must be at least 6 characters');
+        return;
+    }
+    if (data.mobile && !isValidContact(data.mobile)) {
+        showFieldError('Valid 10-digit mobile number required');
+        return;
+    }
+
+    const url = editingDoctorAdminId
+        ? `${API_URL}/doctor-admins/${editingDoctorAdminId}`
+        : `${API_URL}/doctor-admins`;
+    const method = editingDoctorAdminId ? 'PUT' : 'POST';
+    if (editingDoctorAdminId && !data.password) delete data.password;
+    if (data.doctor_id) delete data.doctor_name;
+
+    try {
+        const response = await authFetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await response.json();
+        if (!response.ok) {
+            showAlert(result.error || 'Save failed', 'error');
+            return;
+        }
+        showAlert(editingDoctorAdminId ? 'Doctor Admin updated successfully!' : 'Doctor Admin added successfully!', 'success');
+        await loadDoctorAdmins();
+        closeModal('doctorAdmin');
+        editingDoctorAdminId = null;
+        renderDoctorAdminsTable();
+        updateDoctorAdminStats();
+    } catch (error) {
+        showAdminError(error);
+    }
+});
+
 document.getElementById('cityButtonForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
@@ -1296,28 +1507,89 @@ function updateBloodAdminStats() {
     }
 }
 
+// Doctor Admin Functions
+function editDoctorAdmin(id) {
+    const admin = doctorAdmins.find(a => a.id === id);
+    if (!admin) return;
+
+    editingDoctorAdminId = id;
+
+    document.getElementById('doctorAdminId').value = admin.id;
+    document.getElementById('doctorAdminName').value = admin.name || '';
+    document.getElementById('doctorAdminEmail').value = admin.email || '';
+    document.getElementById('doctorAdminPassword').value = '';
+    document.getElementById('doctorAdminDoctor').value = admin.doctor_name || '';
+    document.getElementById('doctorAdminDoctorId').value = admin.doctor_id || '';
+    document.getElementById('doctorAdminMobile').value = admin.mobile || '';
+    document.getElementById('doctorAdminStatus').value = admin.status || 'active';
+
+    document.getElementById('doctorAdminModalTitle').textContent = '✏️ Edit Doctor Admin';
+    document.getElementById('doctorAdminSubmitBtn').textContent = '💾 Update Doctor Admin';
+
+    openModal('doctorAdmin');
+}
+
+async function deleteDoctorAdmin(id) {
+    if (!confirm('क्या आप वाकई इस Doctor Admin login को delete करना चाहते हैं?')) return;
+
+    try {
+        const response = await authFetch(`${API_URL}/doctor-admins/${id}`, { method: 'DELETE' });
+        if (!response.ok) {
+            const result = await response.json();
+            showAlert(result.error || 'Delete failed', 'error');
+            return;
+        }
+        await loadDoctorAdmins();
+        updateDoctorAdminStats();
+        showAlert('Doctor Admin deleted!', 'success');
+    } catch (error) {
+        showAdminError(error);
+    }
+}
+
+function updateDoctorAdminStats() {
+    const statElement = document.getElementById('statDoctorAdmins');
+    if (statElement) {
+        statElement.textContent = doctorAdmins.length;
+    }
+}
+
 // ==================== CITIES (City Buttons on Website - localStorage) ====================
 function renderCitiesTable() {
     const tbody = document.getElementById('citiesTable');
     if (!tbody) return;
     const infoEl = document.getElementById('citiesInfo');
-    if (infoEl) infoEl.textContent = `Total: ${cities.length} buttons`;
+    const total = cities.length;
+    const totalPages = getTotalPages(total);
+    if (currentPages.cities > totalPages) currentPages.cities = Math.max(1, totalPages);
+    const page = currentPages.cities;
+    const start = (page - 1) * ITEMS_PER_PAGE;
+
+    if (infoEl) infoEl.textContent = `Total: ${total} buttons`;
     
-    if (cities.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4">No city buttons. Add one below.</td></tr>';
+    if (total === 0) {
+        tbody.innerHTML = '<tr><td colspan="3">No city buttons. Add one below.</td></tr>';
+        const paginationEl = document.getElementById('citiesPagination');
+        if (paginationEl) paginationEl.innerHTML = '';
         return;
     }
     
-    tbody.innerHTML = cities.map((c, i) => `
+    const paginated = getPaginatedData(cities, page);
+    tbody.innerHTML = paginated.map((c, i) => {
+        const index = start + i;
+        return `
         <tr>
             <td>${escapeHtml(c.name || '')}</td>
             <td>${escapeHtml(c.value || '')}</td>
             <td>
-                <button class="btn-edit" onclick="editCityButton(${i})">✏️ Edit</button>
-                <button class="btn-delete" onclick="deleteCityButton(${i})">🗑️ Delete</button>
+                <button class="btn-edit" onclick="editCityButton(${index})">✏️ Edit</button>
+                <button class="btn-delete" onclick="deleteCityButton(${index})">🗑️ Delete</button>
             </td>
         </tr>
-    `).join('');
+    `;
+    }).join('');
+
+    generatePagination('cities', total, page);
 }
 
 function escapeHtml(str) {
@@ -1472,13 +1744,19 @@ function renderAllFooterTables() {
 function renderContactTable() {
     const tbody = document.getElementById('contactTable');
     if (!tbody) return;
+    const data = footerData.contact;
+    const totalPages = getTotalPages(data.length);
+    if (currentPages.footerContact > totalPages) currentPages.footerContact = Math.max(1, totalPages);
+    const page = currentPages.footerContact;
     
-    if (footerData.contact.length === 0) {
+    if (data.length === 0) {
         tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#9ca3af;padding:20px;">कोई item नहीं है</td></tr>';
+        const paginationEl = document.getElementById('footerContactPagination');
+        if (paginationEl) paginationEl.innerHTML = '';
         return;
     }
     
-    tbody.innerHTML = footerData.contact.map(item => `
+    tbody.innerHTML = getPaginatedData(data, page).map(item => `
         <tr>
             <td style="font-size: 1.5rem;">${item.icon}</td>
             <td>${item.title}</td>
@@ -1489,19 +1767,27 @@ function renderContactTable() {
             </td>
         </tr>
     `).join('');
+
+    generatePagination('footerContact', data.length, page);
 }
 
 // Render Important table
 function renderImportantTable() {
     const tbody = document.getElementById('importantTable');
     if (!tbody) return;
+    const data = footerData.important;
+    const totalPages = getTotalPages(data.length);
+    if (currentPages.footerImportant > totalPages) currentPages.footerImportant = Math.max(1, totalPages);
+    const page = currentPages.footerImportant;
     
-    if (footerData.important.length === 0) {
+    if (data.length === 0) {
         tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#9ca3af;padding:20px;">कोई item नहीं है</td></tr>';
+        const paginationEl = document.getElementById('footerImportantPagination');
+        if (paginationEl) paginationEl.innerHTML = '';
         return;
     }
     
-    tbody.innerHTML = footerData.important.map(item => `
+    tbody.innerHTML = getPaginatedData(data, page).map(item => `
         <tr>
             <td>${item.title}</td>
             <td><a href="${item.value}" target="_blank" style="color:#1e88e5;">${item.value}</a></td>
@@ -1511,19 +1797,27 @@ function renderImportantTable() {
             </td>
         </tr>
     `).join('');
+
+    generatePagination('footerImportant', data.length, page);
 }
 
 // Render Quick Links table
 function renderQuicklinksTable() {
     const tbody = document.getElementById('quicklinksTable');
     if (!tbody) return;
+    const data = footerData.quicklinks;
+    const totalPages = getTotalPages(data.length);
+    if (currentPages.footerQuicklinks > totalPages) currentPages.footerQuicklinks = Math.max(1, totalPages);
+    const page = currentPages.footerQuicklinks;
     
-    if (footerData.quicklinks.length === 0) {
+    if (data.length === 0) {
         tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#9ca3af;padding:20px;">कोई item नहीं है</td></tr>';
+        const paginationEl = document.getElementById('footerQuicklinksPagination');
+        if (paginationEl) paginationEl.innerHTML = '';
         return;
     }
     
-    tbody.innerHTML = footerData.quicklinks.map(item => `
+    tbody.innerHTML = getPaginatedData(data, page).map(item => `
         <tr>
             <td>${item.title}</td>
             <td><a href="${item.value}" target="_blank" style="color:#1e88e5;">${item.value}</a></td>
@@ -1533,19 +1827,27 @@ function renderQuicklinksTable() {
             </td>
         </tr>
     `).join('');
+
+    generatePagination('footerQuicklinks', data.length, page);
 }
 
 // Render Follow table
 function renderFollowTable() {
     const tbody = document.getElementById('followTable');
     if (!tbody) return;
+    const data = footerData.follow;
+    const totalPages = getTotalPages(data.length);
+    if (currentPages.footerFollow > totalPages) currentPages.footerFollow = Math.max(1, totalPages);
+    const page = currentPages.footerFollow;
     
-    if (footerData.follow.length === 0) {
+    if (data.length === 0) {
         tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#9ca3af;padding:20px;">कोई item नहीं है</td></tr>';
+        const paginationEl = document.getElementById('footerFollowPagination');
+        if (paginationEl) paginationEl.innerHTML = '';
         return;
     }
     
-    tbody.innerHTML = footerData.follow.map(item => `
+    tbody.innerHTML = getPaginatedData(data, page).map(item => `
         <tr>
             <td><span style="display:inline-flex;align-items:center;justify-content:center;width:35px;height:35px;background:#1e88e5;border-radius:50%;color:white;font-weight:bold;">${item.icon}</span></td>
             <td>${item.title}</td>
@@ -1556,6 +1858,8 @@ function renderFollowTable() {
             </td>
         </tr>
     `).join('');
+
+    generatePagination('footerFollow', data.length, page);
 }
 
 // Open footer modal
@@ -2245,6 +2549,15 @@ document.addEventListener('click', function(e) {
             bloodAdminSuggestions.classList.remove('show');
         }
     }
+
+    // Doctor Admin doctor suggestions
+    const doctorAdminSuggestions = document.getElementById('doctorAdminDoctorSuggestions');
+    const doctorAdminInput = document.getElementById('doctorAdminDoctor');
+    if (doctorAdminSuggestions && doctorAdminInput) {
+        if (!doctorAdminInput.contains(e.target) && !doctorAdminSuggestions.contains(e.target)) {
+            doctorAdminSuggestions.classList.remove('show');
+        }
+    }
 });
 
 // ==================== DOCTOR HOSPITAL AUTOCOMPLETE ====================
@@ -2358,6 +2671,63 @@ function showBloodAdminHospitalSuggestions(query) {
 function selectBloodAdminHospital(hospitalName) {
     document.getElementById('bloodAdminHospital').value = hospitalName;
     document.getElementById('bloodAdminHospitalSuggestions').classList.remove('show');
+}
+
+// ==================== DOCTOR ADMIN AUTOCOMPLETE ====================
+
+function showDoctorAdminDoctorSuggestions(query) {
+    const suggestionsDiv = document.getElementById('doctorAdminDoctorSuggestions');
+    if (!suggestionsDiv) return;
+
+    query = query.trim().toLowerCase();
+
+    if (query.length === 0) {
+        suggestionsDiv.classList.remove('show');
+        return;
+    }
+
+    const linkedIds = new Set(
+        doctorAdmins
+            .filter(a => !editingDoctorAdminId || a.id !== editingDoctorAdminId)
+            .map(a => a.doctor_id)
+            .filter(Boolean)
+    );
+
+    const matchingDoctors = doctors.filter(d => {
+        if (linkedIds.has(d.id)) return false;
+        const name = (d.name || '').toLowerCase();
+        const specialty = (d.specialty || '').toLowerCase();
+        const hospital = (d.hospital_name || '').toLowerCase();
+        return name.includes(query) || specialty.includes(query) || hospital.includes(query);
+    }).slice(0, 12);
+
+    if (matchingDoctors.length === 0) {
+        suggestionsDiv.innerHTML = '<div class="no-results">कोई doctor नहीं मिला (या पहले से login है)</div>';
+    } else {
+        suggestionsDiv.innerHTML = matchingDoctors.map(d => {
+            const hosp = d.hospital_name ? ' · ' + escapeHtml(d.hospital_name) : '';
+            const spec = d.specialty ? escapeHtml(d.specialty) : '';
+            const safeName = String(d.name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+            return `
+            <div class="autocomplete-item" onclick="selectDoctorAdminDoctor(${d.id}, '${safeName}')">
+                <div><strong>${escapeHtml(d.name)}</strong> <span style="color:#9ca3af;">${spec}</span></div>
+                <div class="hospital-location">🩺 ID ${d.id}${hosp}</div>
+            </div>`;
+        }).join('');
+    }
+
+    suggestionsDiv.classList.add('show');
+}
+
+function selectDoctorAdminDoctor(doctorId, doctorName) {
+    document.getElementById('doctorAdminDoctor').value = doctorName;
+    document.getElementById('doctorAdminDoctorId').value = doctorId;
+    const nameInput = document.getElementById('doctorAdminName');
+    if (nameInput && !nameInput.value.trim()) {
+        nameInput.value = doctorName;
+    }
+    const suggestionsDiv = document.getElementById('doctorAdminDoctorSuggestions');
+    if (suggestionsDiv) suggestionsDiv.classList.remove('show');
 }
 
 // ==================== SITE SETTINGS (SEO, sitemap, robots, full backup, caching) ====================

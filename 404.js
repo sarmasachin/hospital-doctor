@@ -11,7 +11,8 @@
         cookies: { href: '/cookies', icon: '🍪', title: 'कुकी नीति', desc: 'Cookie Policy' },
         admin: { href: '/admin', icon: '🔐', title: 'Super Admin', desc: 'एडमिन लॉगिन' },
         hospitalAdmin: { href: '/hospital-admin', icon: '🏥', title: 'Hospital Admin', desc: 'हॉस्पिटल एडमिन पैनल' },
-        bloodAdmin: { href: '/blood-admin', icon: '🩸', title: 'Blood Admin', desc: 'ब्लड विभाग एडमिन' }
+        bloodAdmin: { href: '/blood-admin', icon: '🩸', title: 'Blood Admin', desc: 'ब्लड विभाग एडमिन' },
+        doctorAdmin: { href: '/doctor-admin', icon: '🩺', title: 'Doctor Panel', desc: 'डॉक्टर स्टेटस पैनल' }
     };
 
     function getRelatedPages() {
